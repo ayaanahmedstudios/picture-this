@@ -1,3316 +1,461 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Picture This</title>
-
-  <!-- Phosphor-Style Aperture Favicon in #f97316 (Works on Light & Dark Tabs) -->
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Ccircle cx='128' cy='128' r='96' fill='none' stroke='%23f97316' stroke-width='20' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cline x1='128' y1='32' x2='164.68' y2='134.7' fill='none' stroke='%23f97316' stroke-width='18' stroke-linecap='round'/%3E%3Cline x1='44.86' y1='80' x2='152.14' y2='99.58' fill='none' stroke='%23f97316' stroke-width='18' stroke-linecap='round'/%3E%3Cline x1='44.86' y1='176' x2='115.46' y2='92.88' fill='none' stroke='%23f97316' stroke-width='18' stroke-linecap='round'/%3E%3Cline x1='128' y1='224' x2='91.32' y2='121.3' fill='none' stroke='%23f97316' stroke-width='18' stroke-linecap='round'/%3E%3Cline x1='211.14' y1='176' x2='103.86' y2='156.42' fill='none' stroke='%23f97316' stroke-width='18' stroke-linecap='round'/%3E%3Cline x1='211.14' y1='80' x2='140.54' y2='163.12' fill='none' stroke='%23f97316' stroke-width='18' stroke-linecap='round'/%3E%3C/svg%3E" />
-
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- JSZip for Fast Client-Side Archive Export -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-
-  <!-- Phosphor Icons -->
-  <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
-
-  <!-- Google Fonts: Syne & Plus Jakarta Sans (Zero Monospace Fonts) -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@600;700&display=swap" rel="stylesheet">
-
-  <style>
-    :root {
-      --bg-canvas: #0a0a0b;
-      --bg-panel: #121214;
-      --bg-surface: #1a1a1e;
-      --bg-hover: #232329;
-      --border-line: #26262b;
-      --text-main: #f4f4f5;
-      --text-muted: #9ca3af;
-      --text-dim: #6b7280;
-      --accent: #f97316;
-      --accent-hover: #fb923c;
-    }
-
-    * {
-      box-sizing: border-box;
-      user-select: none;
-      -webkit-user-select: none;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    html, body {
-      margin: 0;
-      padding: 0;
-      width: 100vw;
-      height: 100dvh;
-      overflow: hidden;
-      background-color: var(--bg-canvas);
-      color: var(--text-main);
-      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-    }
-
-    .font-wordmark {
-      font-family: 'Syne', sans-serif;
-      letter-spacing: -0.02em;
-    }
-
-    .tabular-nums {
-      font-variant-numeric: tabular-nums;
-      font-feature-settings: "tnum";
-    }
-
-    /* Ultra-clean minimal scrollbars */
-    ::-webkit-scrollbar {
-      width: 4px;
-      height: 4px;
-    }
-    ::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #2c2c33;
-      border-radius: 2px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #3f3f48;
-    }
-
-    /* Minimal Utilitarian Buttons (Max 4px radius) */
-    .pt-btn {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-line);
-      color: var(--text-main);
-      border-radius: 4px;
-      transition: background-color 0.1s ease, border-color 0.1s ease, color 0.1s ease;
-    }
-    .pt-btn:hover:not(:disabled) {
-      background: var(--bg-hover);
-      border-color: #383842;
-    }
-    .pt-btn:disabled {
-      opacity: 0.35;
-      cursor: not-allowed;
-    }
-    .pt-btn-active {
-      background: rgba(249, 115, 22, 0.14) !important;
-      border-color: var(--accent) !important;
-      color: #fb923c !important;
-    }
-
-    .pt-btn-primary {
-      background: var(--accent);
-      border: 1px solid var(--accent);
-      color: #0a0a0b;
-      font-weight: 700;
-      border-radius: 4px;
-      transition: background-color 0.1s ease;
-    }
-    .pt-btn-primary:hover:not(:disabled) {
-      background: var(--accent-hover);
-      border-color: var(--accent-hover);
-    }
-    .pt-btn-primary:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-
-    /* Precision Darkroom Slider System */
-    .pt-slider-row {
-      padding: 4px 0;
-    }
-    .pt-slider-track-container {
-      position: relative;
-      height: 20px;
-      display: flex;
-      align-items: center;
-    }
-    .pt-slider-rail {
-      position: absolute;
-      left: 0;
-      right: 0;
-      height: 3px;
-      background: #26262b;
-      border-radius: 2px;
-      overflow: hidden;
-      pointer-events: none;
-    }
-    .pt-slider-rail-temp {
-      background: linear-gradient(90deg, #2563eb 0%, #26262b 50%, #f59e0b 100%);
-    }
-    .pt-slider-rail-tint {
-      background: linear-gradient(90deg, #16a34a 0%, #26262b 50%, #d946ef 100%);
-    }
-    .pt-slider-center-tick {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      width: 1px;
-      height: 7px;
-      background: #52525b;
-      pointer-events: none;
-      z-index: 1;
-    }
-    .pt-slider-fill {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      background: var(--accent);
-      pointer-events: none;
-    }
-
-    input[type="range"].pt-range {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 100%;
-      height: 20px;
-      background: transparent;
-      outline: none;
-      margin: 0;
-      position: relative;
-      z-index: 2;
-      cursor: ew-resize;
-    }
-    input[type="range"].pt-range::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 12px;
-      height: 12px;
-      border-radius: 2px;
-      background: #f4f4f5;
-      border: 1.5px solid #0a0a0b;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.8);
-      transition: transform 0.08s ease, background-color 0.08s ease;
-    }
-    input[type="range"].pt-range:hover::-webkit-slider-thumb,
-    input[type="range"].pt-range:active::-webkit-slider-thumb {
-      background: var(--accent);
-      transform: scale(1.18);
-    }
-    input[type="range"].pt-range::-moz-range-thumb {
-      width: 12px;
-      height: 12px;
-      border-radius: 2px;
-      background: #f4f4f5;
-      border: 1.5px solid #0a0a0b;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.8);
-    }
-
-    /* Desktop Collapsible Panels */
-    @media (min-width: 861px) {
-      .left-queue-drawer {
-        width: 204px;
-        transition: width 0.16s cubic-bezier(0.16, 1, 0.3, 1);
-      }
-      .left-queue-drawer.collapsed {
-        width: 0px !important;
-        border-right-width: 0px !important;
-        overflow: hidden;
-      }
-      .right-inspector-drawer {
-        width: 308px;
-        transition: width 0.16s cubic-bezier(0.16, 1, 0.3, 1);
-      }
-      .right-inspector-drawer.collapsed {
-        width: 0px !important;
-        border-left-width: 0px !important;
-        overflow: hidden;
-      }
-      .mobile-only {
-        display: none !important;
-      }
-    }
-
-    /* Mobile & Touch Architecture (<= 860px) */
-    @media (max-width: 860px) {
-      .desktop-only {
-        display: none !important;
-      }
-      input[type="range"].pt-range::-webkit-slider-thumb {
-        width: 18px;
-        height: 18px;
-        border-radius: 3px;
-      }
-      input[type="range"].pt-range::-moz-range-thumb {
-        width: 18px;
-        height: 18px;
-        border-radius: 3px;
-      }
-      .pt-slider-track-container {
-        height: 26px;
-      }
-      .right-inspector-drawer {
-        width: 100vw !important;
-        height: 36dvh !important;
-        border-left: none !important;
-        border-top: 1px solid var(--border-line);
-      }
-    }
-  </style>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Ccircle cx='128' cy='128' r='104' fill='none' stroke='%23f97316' stroke-width='20'/%3E%3Cline x1='128' y1='24' x2='164.6' y2='134.8' stroke='%23f97316' stroke-width='18' stroke-linecap='round'/%3E%3Cline x1='37.9' y1='76' x2='152.1' y2='99.6' stroke='%23f97316' stroke-width='18' stroke-linecap='round'/%3E%3Cline x1='37.9' y1='180' x2='115.5' y2='93.2' stroke='%23f97316' stroke-width='18' stroke-linecap='round'/%3E%3Cline x1='128' y1='232' x2='91.4' y2='121.2' stroke='%23f97316' stroke-width='18' stroke-linecap='round'/%3E%3Cline x1='218.1' y1='180' x2='103.9' y2='156.4' stroke='%23f97316' stroke-width='18' stroke-linecap='round'/%3E%3Cline x1='218.1' y1='76' x2='140.5' y2='162.8' stroke='%23f97316' stroke-width='18' stroke-linecap='round'/%3E%3C/svg%3E" />
+  <link href="https://api.fontshare.com/v2/css?f[]=general-sans@500,600&f[]=switzer@400,500,600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
+  <link rel="stylesheet" href="./styles.css" />
 </head>
-<body class="flex flex-col w-screen h-[100dvh] overflow-hidden bg-[#0a0a0b] text-[#f4f4f5]">
+<body>
+  <!-- Hidden File Inputs -->
+  <input type="file" id="file-input" multiple accept="image/*" hidden />
+  <input type="file" id="folder-input" webkitdirectory directory multiple hidden />
 
-  <!-- =========================================================================
-       1. UNCLUTTERED TOP HEADER BAR (44px)
-  ========================================================================== -->
-  <header class="h-[44px] bg-[#121214] border-b border-[#26262b] px-2.5 md:px-3 flex items-center justify-between shrink-0 z-30 gap-2">
-    <!-- Left: Queue Toggle + "Picture This" Wordmark + Photo Count Pill -->
-    <div class="flex items-center gap-2 min-w-0">
-      <button id="toggleLeftQueueBtn" class="desktop-only pt-btn w-7 h-7 flex items-center justify-center text-zinc-300 hover:text-white" title="Toggle Photo Queue ([)">
-        <i class="ph ph-sidebar-simple text-base"></i>
-      </button>
+  <!-- Global Drag & Drop Overlay -->
+  <div id="drop-overlay" class="drop-overlay hidden">
+    <div class="drop-box">
+      <i class="ph ph-folder-open"></i>
+      <span>Drop photos or folders here</span>
+    </div>
+  </div>
 
-      <span class="font-wordmark font-bold text-base md:text-[17px] tracking-tight text-white select-none">Picture This</span>
+  <!-- Home Screen -->
+  <section id="home-screen" class="home-screen">
+    <div class="home-center">
+      <svg class="home-mark" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect class="anim-stroke" x="14" y="14" width="92" height="92" stroke="currentColor" stroke-width="2.5" />
+        <circle class="anim-stroke" cx="60" cy="60" r="28" stroke="#f97316" stroke-width="2.5" />
+        <line class="anim-stroke" x1="60" y1="14" x2="60" y2="24" stroke="currentColor" stroke-width="2" />
+        <line class="anim-stroke" x1="60" y1="96" x2="60" y2="106" stroke="currentColor" stroke-width="2" />
+        <line class="anim-stroke" x1="14" y1="60" x2="24" y2="60" stroke="currentColor" stroke-width="2" />
+        <line class="anim-stroke" x1="96" y1="60" x2="106" y2="60" stroke="currentColor" stroke-width="2" />
+      </svg>
 
-      <span id="headerPhotoCountPill" class="tabular-nums text-[11px] font-medium px-2 py-0.5 rounded-[3px] bg-[#1a1a1e] border border-[#26262b] text-zinc-400">
-        3 photos
-      </span>
+      <h1 class="home-title">Picture This</h1>
+      <p class="home-subtitle">Fast batch photo developing &amp; format conversion</p>
+
+      <div class="home-actions">
+        <button id="home-btn-photos" class="btn btn-primary">
+          <i class="ph ph-images"></i>
+          <span>Select Photos</span>
+        </button>
+        <button id="home-btn-folder" class="btn btn-secondary">
+          <i class="ph ph-folder-notch-open"></i>
+          <span>Select Folder</span>
+        </button>
+      </div>
+
+      <button id="home-btn-sample" class="btn-text">Load sample photographs</button>
     </div>
 
-    <!-- Center (Desktop): Clean 4-Mode Segmented Switcher -->
-    <nav class="desktop-only flex items-center bg-[#0a0a0b] p-0.5 rounded-[4px] border border-[#26262b]">
-      <button data-mode-btn="edit" class="mode-tab-btn px-3 py-1 rounded-[3px] text-xs font-semibold flex items-center gap-1.5 bg-[#1a1a1e] text-[#f97316]">
-        <span>Edit</span>
-        <span class="text-[10px] text-zinc-500 tabular-nums">1</span>
-      </button>
-      <button data-mode-btn="crop" class="mode-tab-btn px-3 py-1 rounded-[3px] text-xs font-semibold flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200">
-        <span>Crop</span>
-        <span class="text-[10px] text-zinc-500 tabular-nums">2</span>
-      </button>
-      <button data-mode-btn="mask" class="mode-tab-btn px-3 py-1 rounded-[3px] text-xs font-semibold flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200">
-        <span>Mask</span>
-        <span id="headerMaskBadge" class="hidden tabular-nums text-[10px] px-1 rounded-[2px] bg-[#f97316]/20 text-[#f97316]">0</span>
-        <span class="text-[10px] text-zinc-500 tabular-nums">3</span>
-      </button>
-      <button data-mode-btn="presets" class="mode-tab-btn px-3 py-1 rounded-[3px] text-xs font-semibold flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200">
-        <span>Presets</span>
-        <span class="text-[10px] text-zinc-500 tabular-nums">4</span>
-      </button>
-    </nav>
+    <footer class="home-footer">
+      <span>&copy; 2026 Ayaan Ahmed</span>
+    </footer>
+  </section>
 
-    <!-- Right: Undo/Redo + Copy/Paste/Sync + Add Photos + Export + Inspector Toggle -->
-    <div class="flex items-center gap-1.5 shrink-0">
-      <div class="flex items-center bg-[#0a0a0b] p-0.5 rounded-[4px] border border-[#26262b]">
-        <button id="undoBtn" disabled class="w-7 h-6 flex items-center justify-center rounded-[2px] text-zinc-300 hover:bg-[#1a1a1e] disabled:opacity-30" title="Undo (Ctrl+Z)">
-          <i class="ph ph-arrow-counter-clockwise text-sm"></i>
+  <!-- Main Workspace -->
+  <main id="workspace" class="workspace hidden">
+    <!-- Top Header Bar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button id="btn-home-logo" class="brand-btn" title="Add more photos">
+          <span class="brand-dot"></span>
+          <span class="brand-name">Picture This</span>
         </button>
-        <button id="redoBtn" disabled class="w-7 h-6 flex items-center justify-center rounded-[2px] text-zinc-300 hover:bg-[#1a1a1e] disabled:opacity-30" title="Redo (Ctrl+Y)">
-          <i class="ph ph-arrow-clockwise text-sm"></i>
-        </button>
+        <span id="photo-counter" class="photo-counter">0 / 0</span>
       </div>
 
-      <!-- Desktop Quick Batch Bar -->
-      <div class="desktop-only flex items-center gap-1">
-        <button id="headerCopyBtn" class="pt-btn px-2 py-1 text-[11px] font-medium text-zinc-300" title="Copy adjustments from current photo (Ctrl+C)">
-          Copy
+      <nav class="mode-tabs" aria-label="Editing mode">
+        <button class="mode-tab active" data-mode="adjust">
+          <i class="ph ph-sliders-horizontal"></i>
+          <span>Adjust</span>
         </button>
-        <button id="headerPasteBtn" disabled class="pt-btn px-2 py-1 text-[11px] font-medium text-zinc-300" title="Paste adjustments to current photo (Ctrl+V)">
-          Paste
+        <button class="mode-tab" data-mode="crop">
+          <i class="ph ph-crop"></i>
+          <span>Crop</span>
         </button>
-        <button id="headerSyncAllBtn" class="pt-btn px-2 py-1 text-[11px] font-medium text-zinc-300 hover:text-[#f97316]" title="Sync current edits to all checked photos">
-          Sync All
+        <button class="mode-tab" data-mode="mask">
+          <i class="ph ph-selection-plus"></i>
+          <span>Mask</span>
+        </button>
+        <button class="mode-tab" data-mode="presets">
+          <i class="ph ph-swatch-book"></i>
+          <span>Presets</span>
+        </button>
+      </nav>
+
+      <div class="topbar-right">
+        <button id="btn-undo" class="icon-btn" title="Undo (Cmd/Ctrl+Z)" disabled>
+          <i class="ph ph-arrow-u-up-left"></i>
+        </button>
+        <button id="btn-redo" class="icon-btn" title="Redo (Cmd/Ctrl+Y)" disabled>
+          <i class="ph ph-arrow-u-up-right"></i>
+        </button>
+        <div class="topbar-divider"></div>
+        <button id="btn-copy" class="btn btn-compact" title="Copy settings (Cmd/Ctrl+C)">
+          <i class="ph ph-copy"></i>
+          <span class="hide-sm">Copy</span>
+        </button>
+        <button id="btn-paste" class="btn btn-compact" title="Paste settings (Cmd/Ctrl+V)" disabled>
+          <i class="ph ph-clipboard-text"></i>
+          <span class="hide-sm">Paste</span>
+        </button>
+        <button id="btn-sync-all" class="btn btn-compact" title="Apply current edits to all photos">
+          <i class="ph ph-arrows-clockwise"></i>
+          <span class="hide-sm">Sync All</span>
+        </button>
+        <div class="topbar-divider"></div>
+        <button id="btn-add-photos" class="icon-btn" title="Add photos">
+          <i class="ph ph-plus"></i>
+        </button>
+        <button id="btn-add-folder" class="icon-btn" title="Add folder">
+          <i class="ph ph-folder-plus"></i>
+        </button>
+        <button id="btn-open-export" class="btn btn-primary btn-compact">
+          <i class="ph ph-export"></i>
+          <span>Export</span>
         </button>
       </div>
+    </header>
 
-      <!-- Add Photos Input -->
-      <label for="fileInput" class="pt-btn px-2.5 py-1 text-xs font-semibold cursor-pointer flex items-center gap-1 text-zinc-200" title="Add photographs from your device">
-        <i class="ph ph-plus text-[#f97316] text-sm"></i>
-        <span class="hidden sm:inline">Add</span>
-      </label>
-      <input id="fileInput" type="file" multiple accept="image/*" class="hidden" />
-
-      <!-- Primary Export Button -->
-      <button id="openExportModalBtn" class="pt-btn-primary px-2.5 md:px-3 py-1 text-xs flex items-center gap-1.5" title="Bulk or Single Export (E)">
-        <i class="ph ph-download-simple text-sm font-bold"></i>
-        <span>Export</span>
-      </button>
-
-      <!-- Right Controls Collapse Button (Desktop) -->
-      <button id="toggleRightInspectorBtn" class="desktop-only pt-btn w-7 h-7 flex items-center justify-center text-zinc-300 hover:text-white" title="Toggle Controls Panel (])">
-        <i id="rightCollapseIcon" class="ph ph-caret-right text-sm"></i>
-      </button>
-    </div>
-  </header>
-
-  <!-- =========================================================================
-       2. MAIN WORKSPACE AREA (DESKTOP 3-COLUMN / MOBILE VERTICAL STACK)
-  ========================================================================== -->
-  <div class="flex-1 flex flex-col md:flex-row min-h-0 min-w-0 relative overflow-hidden">
-
-    <!-- =======================================================================
-         2A. DESKTOP LEFT QUEUE / FILMSTRIP DRAWER (Collapsible)
-    ======================================================================== -->
-    <aside id="leftQueueDrawer" class="desktop-only left-queue-drawer bg-[#121214] border-r border-[#26262b] flex flex-col min-h-0 shrink-0 z-20">
-      <div class="h-8 px-2.5 border-b border-[#26262b] flex items-center justify-between text-[11px] text-zinc-400 shrink-0">
-        <div class="flex items-center gap-2">
-          <button id="selectAllQueueBtn" class="hover:text-white flex items-center gap-1" title="Check or uncheck all photos for batch sync/export">
-            <i class="ph ph-check-square text-[#f97316]"></i>
-            <span>All</span>
-          </button>
-          <span class="text-zinc-600">·</span>
-          <button id="clearQueueBtn" class="hover:text-red-400" title="Remove all photos">Clear</button>
-        </div>
-        <button id="loadSamplesBtn" class="text-zinc-400 hover:text-[#f97316]" title="Load sample photographs">Samples</button>
-      </div>
-
-      <!-- Vertical Thumbnails List -->
-      <div id="desktopFilmstripList" class="flex-1 overflow-y-auto p-2 space-y-2">
-        <!-- Populated by JS -->
-      </div>
-    </aside>
-
-    <!-- =======================================================================
-         2B. CENTER PHOTO CANVAS VIEWPORT STAGE
-    ======================================================================== -->
-    <main class="flex-1 flex flex-col min-w-0 min-h-0 bg-[#0a0a0b] relative overflow-hidden">
-
-      <!-- Canvas Stage Container -->
-      <div id="viewportStage" class="flex-1 relative flex items-center justify-center overflow-hidden min-h-[180px] p-2 md:p-5">
-
-        <!-- Empty State Dropzone -->
-        <div id="emptyDropzone" class="hidden bg-[#121214] border border-[#26262b] rounded-[4px] p-6 max-w-sm w-full text-center flex-col items-center gap-3 z-20">
-          <i class="ph ph-aperture text-3xl text-[#f97316]"></i>
-          <div class="space-y-1">
-            <h2 class="font-wordmark font-bold text-base text-white">Drop photographs here</h2>
-            <p class="text-xs text-zinc-400 leading-relaxed">
-              Fast, local GPU photo grading, cropping, masking, and bulk WebP, JPEG, or PNG conversion. Zero uploads.
-            </p>
-          </div>
-          <div class="flex items-center gap-2 pt-1">
-            <label for="fileInput" class="pt-btn-primary px-3.5 py-1.5 text-xs cursor-pointer flex items-center gap-1.5">
-              <i class="ph ph-plus font-bold"></i>
-              <span>Choose Photos</span>
-            </label>
-            <button id="emptyLoadSamplesBtn" class="pt-btn px-3 py-1.5 text-xs text-zinc-300">
-              Load Samples
-            </button>
+    <!-- Center Stage + Right Inspector -->
+    <div class="workbench">
+      <!-- Viewport Stage -->
+      <section class="stage-column">
+        <div id="canvas-stage" class="canvas-stage">
+          <div id="canvas-wrap" class="canvas-wrap">
+            <canvas id="gl-canvas"></canvas>
+            <canvas id="overlay-canvas"></canvas>
           </div>
         </div>
 
-        <!-- GPU WebGL Canvas + Interactive Pointer Overlay Canvas -->
-        <div id="canvasMountWrap" class="relative flex items-center justify-center" style="touch-action: none;">
-          <canvas id="glPhotoCanvas" class="block shadow-2xl border border-[#26262b]"></canvas>
-          <canvas id="interactiveOverlayCanvas" class="absolute inset-0 pointer-events-auto" style="touch-action: none;"></canvas>
-        </div>
-
-        <!-- Floating Before / Original Badge -->
-        <div id="comparingBadge" class="hidden absolute top-3 left-3 bg-[#f97316] text-black text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-[3px] pointer-events-none z-20">
-          Original
-        </div>
-      </div>
-
-      <!-- MOBILE HORIZONTAL FILMSTRIP + QUICK BAR (<= 860px) -->
-      <div class="mobile-only bg-[#121214] border-t border-[#26262b] shrink-0 flex flex-col">
-        <div class="h-7 px-2.5 flex items-center justify-between text-[11px] text-zinc-400 border-b border-[#26262b]">
-          <div class="flex items-center gap-2">
-            <button id="mobileToggleStripBtn" class="text-zinc-300 font-medium flex items-center gap-1">
-              <i id="mobileStripCaret" class="ph ph-caret-down text-xs text-[#f97316]"></i>
+        <!-- Dedicated Non-Overlapping Utility Bar -->
+        <div class="stage-bar">
+          <div class="stage-bar-left">
+            <button id="btn-toggle-filmstrip" class="bar-btn" title="Toggle Filmstrip">
+              <i class="ph ph-film-strip"></i>
               <span>Filmstrip</span>
             </button>
-            <button id="mobileCompareBtn" class="pt-btn px-1.5 py-0.5 text-[10px]">Hold Original</button>
+            <span id="file-meta" class="file-meta"></span>
           </div>
-          <div class="flex items-center gap-1.5">
-            <button id="mobileCopyBtn" class="pt-btn px-1.5 py-0.5 text-[10px]">Copy</button>
-            <button id="mobilePasteBtn" disabled class="pt-btn px-1.5 py-0.5 text-[10px]">Paste</button>
-            <button id="mobileSyncAllBtn" class="pt-btn px-1.5 py-0.5 text-[10px] text-[#f97316]">Sync All</button>
-          </div>
-        </div>
-        <div id="mobileFilmstripList" class="h-[52px] flex items-center gap-1.5 overflow-x-auto px-2 py-1">
-          <!-- Populated by JS -->
-        </div>
-      </div>
 
-    </main>
-
-    <!-- =======================================================================
-         2C. RIGHT CONTROLS PANEL (Desktop 308px / Mobile Bottom Deck)
-    ======================================================================== -->
-    <aside id="rightInspectorDrawer" class="right-inspector-drawer bg-[#121214] border-l border-[#26262b] flex flex-col min-h-0 shrink-0 z-20">
-
-      <!-- MOBILE COMPACT CATEGORY BAR (<= 860px) -->
-      <div class="mobile-only h-9 bg-[#0a0a0b] border-b border-[#26262b] px-1.5 flex items-center justify-between gap-1 overflow-x-auto shrink-0">
-        <button data-mobile-tab="light" class="mob-tab-btn px-2.5 py-1 rounded-[3px] text-[11px] font-semibold shrink-0 bg-[#1a1a1e] text-[#f97316]">Light</button>
-        <button data-mobile-tab="color" class="mob-tab-btn px-2.5 py-1 rounded-[3px] text-[11px] font-semibold shrink-0 text-zinc-400">Color</button>
-        <button data-mobile-tab="finish" class="mob-tab-btn px-2.5 py-1 rounded-[3px] text-[11px] font-semibold shrink-0 text-zinc-400">Finish</button>
-        <button data-mobile-tab="crop" class="mob-tab-btn px-2.5 py-1 rounded-[3px] text-[11px] font-semibold shrink-0 text-zinc-400">Crop</button>
-        <button data-mobile-tab="mask" class="mob-tab-btn px-2.5 py-1 rounded-[3px] text-[11px] font-semibold shrink-0 text-zinc-400">Mask</button>
-        <button data-mobile-tab="presets" class="mob-tab-btn px-2.5 py-1 rounded-[3px] text-[11px] font-semibold shrink-0 text-zinc-400">Presets</button>
-      </div>
-
-      <!-- SCROLLABLE INSPECTOR CONTENT -->
-      <div class="flex-1 overflow-y-auto divide-y divide-[#26262b]">
-
-        <!-- ===================================================================
-             MODE 1: EDIT (LIGHT, COLOR, FINISH)
-        ==================================================================== -->
-        <div id="panelMode_edit" class="divide-y divide-[#26262b]">
-
-          <!-- Quick Bar: Auto Balance + Reset All -->
-          <div class="p-2.5 bg-[#121214] flex items-center gap-2">
-            <button id="autoBalanceBtn" class="pt-btn flex-1 py-1.5 px-2.5 text-xs font-semibold flex items-center justify-center gap-1.5 text-zinc-100 hover:border-[#f97316]">
-              <i class="ph ph-magic-wand text-[#f97316]"></i>
-              <span>Auto Balance</span>
+          <div class="stage-bar-right">
+            <button id="btn-split-wipe" class="bar-btn" title="Split before/after comparison">
+              <i class="ph ph-columns"></i>
+              <span>Split</span>
             </button>
-            <button id="resetPhotoEditsBtn" class="pt-btn py-1.5 px-2.5 text-xs font-medium flex items-center justify-center gap-1 text-zinc-300 hover:text-[#f97316]" title="Reset all adjustments (R)">
+            <button id="btn-compare-hold" class="bar-btn" title="Hold to view original">
+              <i class="ph ph-eye"></i>
+              <span>Original</span>
+            </button>
+            <button id="btn-reset-photo" class="bar-btn" title="Reset all edits on current photo">
               <i class="ph ph-arrow-counter-clockwise"></i>
               <span>Reset</span>
             </button>
+            <button id="btn-toggle-inspector" class="bar-btn" title="Toggle Inspector Panel">
+              <i class="ph ph-sidebar-simple"></i>
+              <span>Panel</span>
+            </button>
           </div>
-
-          <!-- GROUP: LIGHT -->
-          <section id="editGroup_light" class="bg-[#121214]">
-            <header class="px-3 py-2 bg-[#161619] flex items-center justify-between cursor-pointer" data-accordion="body_light">
-              <div class="flex items-center gap-2">
-                <span class="font-wordmark text-xs font-bold uppercase tracking-wider text-zinc-200">Light</span>
-                <span id="groupDot_light" class="hidden w-1.5 h-1.5 rounded-full bg-[#f97316]"></span>
-              </div>
-              <div class="flex items-center gap-1">
-                <button data-bypass="light" class="w-6 h-6 rounded-[3px] flex items-center justify-center text-zinc-400 hover:text-white hover:bg-[#232329]" title="Toggle Light group on/off">
-                  <i class="ph ph-eye text-xs"></i>
-                </button>
-                <button data-reset-group="light" class="w-6 h-6 rounded-[3px] flex items-center justify-center text-zinc-400 hover:text-[#f97316] hover:bg-[#232329]" title="Reset Light sliders">
-                  <i class="ph ph-arrow-counter-clockwise text-xs"></i>
-                </button>
-                <i id="caret_body_light" class="ph ph-caret-down text-xs text-zinc-500 ml-0.5"></i>
-              </div>
-            </header>
-            <div id="body_light" class="px-3 py-2 space-y-1">
-              <div id="mountSliders_light"></div>
-            </div>
-          </section>
-
-          <!-- GROUP: COLOR -->
-          <section id="editGroup_color" class="bg-[#121214]">
-            <header class="px-3 py-2 bg-[#161619] flex items-center justify-between cursor-pointer" data-accordion="body_color">
-              <div class="flex items-center gap-2">
-                <span class="font-wordmark text-xs font-bold uppercase tracking-wider text-zinc-200">Color</span>
-                <span id="groupDot_color" class="hidden w-1.5 h-1.5 rounded-full bg-[#f97316]"></span>
-              </div>
-              <div class="flex items-center gap-1">
-                <button data-bypass="color" class="w-6 h-6 rounded-[3px] flex items-center justify-center text-zinc-400 hover:text-white hover:bg-[#232329]" title="Toggle Color group on/off">
-                  <i class="ph ph-eye text-xs"></i>
-                </button>
-                <button data-reset-group="color" class="w-6 h-6 rounded-[3px] flex items-center justify-center text-zinc-400 hover:text-[#f97316] hover:bg-[#232329]" title="Reset Color sliders">
-                  <i class="ph ph-arrow-counter-clockwise text-xs"></i>
-                </button>
-                <i id="caret_body_color" class="ph ph-caret-down text-xs text-zinc-500 ml-0.5"></i>
-              </div>
-            </header>
-            <div id="body_color" class="px-3 py-2 space-y-1">
-              <div id="mountSliders_color"></div>
-            </div>
-          </section>
-
-          <!-- GROUP: DETAIL & FINISH -->
-          <section id="editGroup_finish" class="bg-[#121214]">
-            <header class="px-3 py-2 bg-[#161619] flex items-center justify-between cursor-pointer" data-accordion="body_finish">
-              <div class="flex items-center gap-2">
-                <span class="font-wordmark text-xs font-bold uppercase tracking-wider text-zinc-200">Detail &amp; Finish</span>
-                <span id="groupDot_finish" class="hidden w-1.5 h-1.5 rounded-full bg-[#f97316]"></span>
-              </div>
-              <div class="flex items-center gap-1">
-                <button data-bypass="finish" class="w-6 h-6 rounded-[3px] flex items-center justify-center text-zinc-400 hover:text-white hover:bg-[#232329]" title="Toggle Detail & Finish group on/off">
-                  <i class="ph ph-eye text-xs"></i>
-                </button>
-                <button data-reset-group="finish" class="w-6 h-6 rounded-[3px] flex items-center justify-center text-zinc-400 hover:text-[#f97316] hover:bg-[#232329]" title="Reset Detail & Finish sliders">
-                  <i class="ph ph-arrow-counter-clockwise text-xs"></i>
-                </button>
-                <i id="caret_body_finish" class="ph ph-caret-down text-xs text-zinc-500 ml-0.5"></i>
-              </div>
-            </header>
-            <div id="body_finish" class="px-3 py-2 space-y-1">
-              <div id="mountSliders_finish"></div>
-            </div>
-          </section>
-
         </div>
 
-        <!-- ===================================================================
-             MODE 2: CROP & CUSTOM ROTATION
-        ==================================================================== -->
-        <div id="panelMode_crop" class="hidden p-3 space-y-4">
-          <div class="flex items-center justify-between">
-            <span class="font-wordmark text-xs font-bold uppercase tracking-wider text-zinc-200">Crop &amp; Angle</span>
-            <span id="cropDimensionsLabel" class="tabular-nums text-xs font-medium text-[#f97316] bg-[#1a1a1e] px-2 py-0.5 rounded-[3px] border border-[#26262b]">1920 × 1280</span>
+        <!-- Collapsible Bottom Filmstrip -->
+        <div id="filmstrip-wrap" class="filmstrip-wrap">
+          <div id="filmstrip" class="filmstrip"></div>
+        </div>
+      </section>
+
+      <!-- Collapsible Right Inspector -->
+      <aside id="inspector" class="inspector">
+        <!-- ADJUST PANEL -->
+        <div id="panel-adjust" class="inspector-panel active">
+          <div class="panel-top-actions">
+            <button id="btn-auto-tone" class="btn btn-secondary btn-full">
+              <i class="ph ph-magic-wand"></i>
+              <span>Auto Balance</span>
+            </button>
           </div>
 
-          <div class="grid grid-cols-2 gap-1.5">
-            <button id="commitCropBtn" class="pt-btn-primary py-1.5 text-xs flex items-center justify-center gap-1">
-              <i class="ph ph-check font-bold"></i>
-              <span>Done</span>
-            </button>
-            <button id="resetCropBtn" class="pt-btn py-1.5 text-xs flex items-center justify-center gap-1 text-zinc-300">
+          <!-- Light Accordion -->
+          <div class="accordion open" data-section="light">
+            <div class="accordion-header">
+              <button class="accordion-trigger" type="button">
+                <i class="ph ph-caret-down caret-icon"></i>
+                <span>Light</span>
+              </button>
+              <div class="accordion-tools">
+                <button class="mini-icon-btn section-eye" data-section="light" title="Toggle Light adjustments">
+                  <i class="ph ph-eye"></i>
+                </button>
+                <button class="mini-icon-btn section-reset" data-section="light" title="Reset Light">
+                  <i class="ph ph-arrow-counter-clockwise"></i>
+                </button>
+              </div>
+            </div>
+            <div class="accordion-body" id="sliders-light"></div>
+          </div>
+
+          <!-- Color Accordion -->
+          <div class="accordion open" data-section="color">
+            <div class="accordion-header">
+              <button class="accordion-trigger" type="button">
+                <i class="ph ph-caret-down caret-icon"></i>
+                <span>Color</span>
+              </button>
+              <div class="accordion-tools">
+                <button class="mini-icon-btn section-eye" data-section="color" title="Toggle Color adjustments">
+                  <i class="ph ph-eye"></i>
+                </button>
+                <button class="mini-icon-btn section-reset" data-section="color" title="Reset Color">
+                  <i class="ph ph-arrow-counter-clockwise"></i>
+                </button>
+              </div>
+            </div>
+            <div class="accordion-body" id="sliders-color"></div>
+          </div>
+
+          <!-- Detail & Effects Accordion -->
+          <div class="accordion open" data-section="effects">
+            <div class="accordion-header">
+              <button class="accordion-trigger" type="button">
+                <i class="ph ph-caret-down caret-icon"></i>
+                <span>Effects</span>
+              </button>
+              <div class="accordion-tools">
+                <button class="mini-icon-btn section-eye" data-section="effects" title="Toggle Effects">
+                  <i class="ph ph-eye"></i>
+                </button>
+                <button class="mini-icon-btn section-reset" data-section="effects" title="Reset Effects">
+                  <i class="ph ph-arrow-counter-clockwise"></i>
+                </button>
+              </div>
+            </div>
+            <div class="accordion-body" id="sliders-effects"></div>
+          </div>
+        </div>
+
+        <!-- CROP PANEL -->
+        <div id="panel-crop" class="inspector-panel">
+          <div class="panel-section">
+            <div class="section-label">Aspect Ratio</div>
+            <div class="ratio-grid">
+              <button class="ratio-btn active" data-ratio="free">Free</button>
+              <button class="ratio-btn" data-ratio="original">Original</button>
+              <button class="ratio-btn" data-ratio="1:1">1:1</button>
+              <button class="ratio-btn" data-ratio="4:5">4:5</button>
+              <button class="ratio-btn" data-ratio="3:2">3:2</button>
+              <button class="ratio-btn" data-ratio="16:9">16:9</button>
+              <button class="ratio-btn" data-ratio="21:9">21:9</button>
+              <button id="btn-swap-ratio" class="ratio-btn" title="Swap orientation">
+                <i class="ph ph-arrows-left-right"></i> Swap
+              </button>
+            </div>
+          </div>
+
+          <div class="panel-section">
+            <div class="slider-row">
+              <div class="slider-header">
+                <span class="slider-label">Straighten</span>
+                <span id="val-rotate-fine" class="slider-val">0.0°</span>
+              </div>
+              <input type="range" id="slider-rotate-fine" class="studio-range" min="-45" max="45" step="0.1" value="0" />
+            </div>
+          </div>
+
+          <div class="panel-section">
+            <div class="section-label">Transform</div>
+            <div class="transform-row">
+              <button id="btn-rot-left" class="btn btn-secondary" title="Rotate 90° Left">
+                <i class="ph ph-arrow-counter-clockwise"></i>
+                <span>90° L</span>
+              </button>
+              <button id="btn-rot-right" class="btn btn-secondary" title="Rotate 90° Right">
+                <i class="ph ph-arrow-clockwise"></i>
+                <span>90° R</span>
+              </button>
+              <button id="btn-flip-h" class="btn btn-secondary" title="Flip Horizontal">
+                <i class="ph ph-flip-horizontal"></i>
+              </button>
+              <button id="btn-flip-v" class="btn btn-secondary" title="Flip Vertical">
+                <i class="ph ph-flip-vertical"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="panel-section">
+            <button id="btn-reset-crop" class="btn btn-secondary btn-full">
               <i class="ph ph-arrow-counter-clockwise"></i>
-              <span>Reset Crop</span>
+              <span>Reset Crop &amp; Rotation</span>
             </button>
-          </div>
-
-          <!-- Fine Custom Rotation (-45.0° to +45.0°) -->
-          <div class="space-y-1.5 pt-2 border-t border-[#26262b]">
-            <div class="flex items-center justify-between text-xs">
-              <span class="font-medium text-zinc-300">Custom Angle</span>
-              <div class="flex items-center gap-1.5">
-                <span id="straightenReadout" class="tabular-nums text-xs text-zinc-300">0.0°</span>
-                <button id="resetAngleDotBtn" class="hidden w-3.5 h-3.5 rounded-full bg-[#f97316]/20 items-center justify-center" title="Reset angle to 0°">
-                  <span class="w-1.5 h-1.5 rounded-full bg-[#f97316]"></span>
-                </button>
-              </div>
-            </div>
-            <div class="pt-slider-track-container">
-              <div class="pt-slider-rail">
-                <div id="straightenFill" class="pt-slider-fill" style="left:50%;width:0%;"></div>
-              </div>
-              <div class="pt-slider-center-tick"></div>
-              <input id="straightenInput" type="range" min="-45" max="45" step="0.1" value="0" class="pt-range" />
-            </div>
-
-            <label class="flex items-center justify-between text-[11px] text-zinc-400 pt-1 cursor-pointer">
-              <span>Auto-Scale to Fill Edges</span>
-              <input id="autoScaleCropCheck" type="checkbox" checked class="accent-[#f97316] rounded-[2px]" />
-            </label>
-          </div>
-
-          <!-- Aspect Ratio Presets -->
-          <div class="space-y-2 pt-2 border-t border-[#26262b]">
-            <div class="flex items-center justify-between">
-              <span class="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Aspect Ratio</span>
-              <button id="swapAspectBtn" class="pt-btn px-2 py-0.5 text-[11px] flex items-center gap-1 text-zinc-300">
-                <i class="ph ph-arrows-clockwise text-[#f97316]"></i>
-                <span>Swap Orientation</span>
-              </button>
-            </div>
-            <div id="aspectPresetsGrid" class="grid grid-cols-4 gap-1.5">
-              <button data-aspect="free" class="pt-btn pt-btn-active py-1.5 text-xs font-medium">Free</button>
-              <button data-aspect="original" class="pt-btn py-1.5 text-xs font-medium">Orig</button>
-              <button data-aspect="1:1" class="pt-btn py-1.5 text-xs font-medium tabular-nums">1:1</button>
-              <button data-aspect="4:5" class="pt-btn py-1.5 text-xs font-medium tabular-nums">4:5</button>
-              <button data-aspect="3:2" class="pt-btn py-1.5 text-xs font-medium tabular-nums">3:2</button>
-              <button data-aspect="16:9" class="pt-btn py-1.5 text-xs font-medium tabular-nums">16:9</button>
-              <button data-aspect="21:9" class="pt-btn py-1.5 text-xs font-medium tabular-nums">21:9</button>
-              <button data-aspect="9:16" class="pt-btn py-1.5 text-xs font-medium tabular-nums">9:16</button>
-            </div>
-          </div>
-
-          <!-- 90° Turn & Flip -->
-          <div class="space-y-2 pt-2 border-t border-[#26262b]">
-            <span class="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Orientation</span>
-            <div class="grid grid-cols-2 gap-1.5">
-              <button id="rotCCWBtn" class="pt-btn py-1.5 text-xs flex items-center justify-center gap-1.5">
-                <i class="ph ph-arrow-counter-clockwise text-[#f97316]"></i>
-                <span>-90°</span>
-              </button>
-              <button id="rotCWBtn" class="pt-btn py-1.5 text-xs flex items-center justify-center gap-1.5">
-                <i class="ph ph-arrow-clockwise text-[#f97316]"></i>
-                <span>+90°</span>
-              </button>
-              <button id="flipHBtn" class="pt-btn py-1.5 text-xs flex items-center justify-center gap-1.5">
-                <i class="ph ph-arrows-left-right text-[#f97316]"></i>
-                <span>Flip H</span>
-              </button>
-              <button id="flipVBtn" class="pt-btn py-1.5 text-xs flex items-center justify-center gap-1.5">
-                <i class="ph ph-arrows-down-up text-[#f97316]"></i>
-                <span>Flip V</span>
-              </button>
-            </div>
           </div>
         </div>
 
-        <!-- ===================================================================
-             MODE 3: MASK EDITING (LINEAR, RADIAL, BRUSH)
-        ==================================================================== -->
-        <div id="panelMode_mask" class="hidden p-3 space-y-3.5">
-          <div class="flex items-center justify-between">
-            <span class="font-wordmark text-xs font-bold uppercase tracking-wider text-zinc-200">Masking</span>
-            <label class="flex items-center gap-1.5 text-xs text-zinc-300 cursor-pointer">
-              <input id="showMaskOverlayCheck" type="checkbox" checked class="accent-[#f97316] rounded-[2px]" />
-              <span>Highlight Overlay</span>
-            </label>
-          </div>
-
-          <!-- Add Mask Buttons -->
-          <div class="grid grid-cols-3 gap-1.5">
-            <button id="addLinearMaskBtn" class="pt-btn py-2 px-1 text-xs flex flex-col items-center gap-1">
-              <i class="ph ph-gradient text-[#f97316] text-base"></i>
-              <span class="text-[11px] font-medium">Linear</span>
-            </button>
-            <button id="addRadialMaskBtn" class="pt-btn py-2 px-1 text-xs flex flex-col items-center gap-1">
-              <i class="ph ph-circle-dashed text-[#f97316] text-base"></i>
-              <span class="text-[11px] font-medium">Radial</span>
-            </button>
-            <button id="addBrushMaskBtn" class="pt-btn py-2 px-1 text-xs flex flex-col items-center gap-1">
-              <i class="ph ph-paint-brush-broad text-[#f97316] text-base"></i>
-              <span class="text-[11px] font-medium">Brush</span>
-            </button>
-          </div>
-
-          <!-- Mask Layers Stack -->
-          <div class="space-y-1.5 pt-2 border-t border-[#26262b]">
-            <div class="flex items-center justify-between">
-              <span class="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Masks on Photo</span>
-              <button id="deleteAllMasksBtn" class="text-[11px] text-zinc-400 hover:text-red-400">Clear All</button>
-            </div>
-            <div id="maskListContainer" class="space-y-1">
-              <!-- Populated by JS -->
+        <!-- MASK PANEL -->
+        <div id="panel-mask" class="inspector-panel">
+          <div class="panel-section">
+            <div class="section-label">Create Mask</div>
+            <div class="mask-create-row">
+              <button id="btn-add-linear" class="btn btn-secondary">
+                <i class="ph ph-gradient"></i>
+                <span>Linear</span>
+              </button>
+              <button id="btn-add-radial" class="btn btn-secondary">
+                <i class="ph ph-circle-dashed"></i>
+                <span>Radial</span>
+              </button>
+              <button id="btn-add-brush" class="btn btn-secondary">
+                <i class="ph ph-paint-brush"></i>
+                <span>Brush</span>
+              </button>
             </div>
           </div>
 
-          <!-- Active Mask Settings & Local Sliders -->
-          <div id="activeMaskEditor" class="hidden space-y-3 pt-2 border-t border-[#26262b]">
-            <div class="flex items-center justify-between">
-              <span id="activeMaskLabel" class="text-xs font-bold text-[#f97316]">Linear 1</span>
-              <label class="flex items-center gap-1.5 text-xs text-zinc-300 cursor-pointer">
-                <input id="invertMaskCheck" type="checkbox" class="accent-[#f97316] rounded-[2px]" />
-                <span>Invert Mask</span>
+          <div class="panel-section">
+            <div class="mask-list-header">
+              <span class="section-label">Masks</span>
+              <label class="toggle-inline">
+                <input type="checkbox" id="chk-mask-overlay" />
+                <span>Show Overlay</span>
               </label>
             </div>
-
-            <!-- Brush Tool Sub-Controls -->
-            <div id="brushSettingsBox" class="hidden bg-[#1a1a1e] p-2.5 rounded-[4px] border border-[#26262b] space-y-2">
-              <div class="grid grid-cols-2 gap-1.5">
-                <button id="brushPaintBtn" class="pt-btn pt-btn-active py-1 text-xs font-medium">Paint</button>
-                <button id="brushEraseBtn" class="pt-btn py-1 text-xs font-medium">Erase</button>
-              </div>
-              <div>
-                <div class="flex justify-between text-[11px] text-zinc-400">
-                  <span>Brush Size</span>
-                  <span id="brushSizeVal" class="tabular-nums">64 px</span>
-                </div>
-                <input id="brushSizeInput" type="range" min="10" max="200" value="64" class="pt-range" />
-              </div>
-              <div>
-                <div class="flex justify-between text-[11px] text-zinc-400">
-                  <span>Feather</span>
-                  <span id="brushFeatherVal" class="tabular-nums">65%</span>
-                </div>
-                <input id="brushFeatherInput" type="range" min="0" max="100" value="65" class="pt-range" />
-              </div>
-            </div>
-
-            <!-- Local Mask Sliders -->
-            <div class="space-y-1">
-              <div class="flex items-center justify-between">
-                <span class="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Mask Adjustments</span>
-                <button id="resetMaskSlidersBtn" class="text-[11px] text-zinc-400 hover:text-[#f97316]">Reset</button>
-              </div>
-              <div id="mountSliders_mask"></div>
-            </div>
+            <div id="mask-list" class="mask-list"></div>
           </div>
-        </div>
 
-        <!-- ===================================================================
-             MODE 4: PRESETS & HISTORY BACKTRACKING
-        ==================================================================== -->
-        <div id="panelMode_presets" class="hidden p-3 space-y-4">
-          <!-- Presets Section -->
-          <div class="space-y-2">
-            <div class="flex items-center justify-between">
-              <span class="font-wordmark text-xs font-bold uppercase tracking-wider text-zinc-200">Presets</span>
-              <button id="showSavePresetBoxBtn" class="text-xs font-semibold text-[#f97316] hover:underline flex items-center gap-1">
-                <i class="ph ph-plus"></i>
-                <span>Save Current</span>
+          <div id="mask-controls-wrap" class="panel-section hidden">
+            <div class="mask-options-bar">
+              <label class="toggle-inline">
+                <input type="checkbox" id="chk-mask-invert" />
+                <span>Invert Mask</span>
+              </label>
+              <button id="btn-delete-mask" class="btn-danger-text">
+                <i class="ph ph-trash"></i> Delete
               </button>
             </div>
 
-            <!-- Save Custom Preset Inline Form -->
-            <div id="savePresetForm" class="hidden bg-[#1a1a1e] p-2.5 rounded-[4px] border border-[#26262b] space-y-2">
-              <input id="customPresetNameInput" type="text" placeholder="Preset name..." class="w-full bg-[#0a0a0b] border border-[#26262b] rounded-[3px] px-2.5 py-1.5 text-xs text-white outline-none focus:border-[#f97316]" />
-              <div class="flex justify-end gap-1.5">
-                <button id="cancelPresetBtn" class="pt-btn px-2.5 py-1 text-xs">Cancel</button>
-                <button id="confirmSavePresetBtn" class="pt-btn-primary px-2.5 py-1 text-xs">Save</button>
+            <div id="brush-controls" class="brush-controls hidden">
+              <div class="slider-row">
+                <div class="slider-header">
+                  <span class="slider-label">Brush Size</span>
+                  <span id="val-brush-size" class="slider-val">60</span>
+                </div>
+                <input type="range" id="slider-brush-size" class="studio-range" min="10" max="200" step="1" value="60" />
+              </div>
+              <div class="brush-mode-row">
+                <button id="btn-brush-paint" class="btn btn-secondary active">Paint</button>
+                <button id="btn-brush-erase" class="btn btn-secondary">Erase</button>
+                <button id="btn-brush-clear" class="btn btn-secondary">Clear</button>
               </div>
             </div>
 
-            <div id="presetsListMount" class="grid grid-cols-1 gap-1.5">
-              <!-- Populated by JS -->
-            </div>
-          </div>
-
-          <!-- Non-Destructive History Backtracking -->
-          <div class="space-y-2 pt-3 border-t border-[#26262b]">
-            <div class="flex items-center justify-between">
-              <span class="font-wordmark text-xs font-bold uppercase tracking-wider text-zinc-200">History</span>
-              <span class="text-[11px] text-zinc-500">Click step to backtrack</span>
-            </div>
-            <div id="historyListMount" class="space-y-1 max-h-56 overflow-y-auto">
-              <!-- Populated by JS -->
-            </div>
+            <div id="sliders-mask" class="mask-sliders"></div>
           </div>
         </div>
 
-      </div>
-    </aside>
+        <!-- PRESETS PANEL -->
+        <div id="panel-presets" class="inspector-panel">
+          <div class="panel-section">
+            <div class="section-label">Looks</div>
+            <div id="preset-grid" class="preset-grid"></div>
+          </div>
 
-  </div>
-
-  <!-- =========================================================================
-       3. MINIMAL BOTTOM STATUS BAR (28px Desktop)
-  ========================================================================== -->
-  <footer class="desktop-only h-[28px] bg-[#121214] border-t border-[#26262b] px-3 flex items-center justify-between text-[11px] text-zinc-400 shrink-0 z-30">
-    <!-- Left: Active File Info + Zoom & Compare -->
-    <div class="flex items-center gap-3 min-w-0">
-      <span id="statusFileName" class="text-zinc-200 font-medium truncate max-w-[200px]">Architectural_Light.jpg</span>
-      <span id="statusResolution" class="tabular-nums text-zinc-500">1920 × 1280</span>
-
-      <div class="flex items-center gap-1 bg-[#0a0a0b] px-1.5 py-0.5 rounded-[3px] border border-[#26262b] tabular-nums">
-        <button id="zoomOutBtn" class="px-1 hover:text-white" title="Zoom Out">-</button>
-        <button id="zoomFitBtn" class="px-1 text-[#f97316] font-medium" title="Fit to Screen">Fit</button>
-        <button id="zoomInBtn" class="px-1 hover:text-white" title="Zoom In">+</button>
-      </div>
-
-      <button id="holdCompareFooterBtn" class="hover:text-white flex items-center gap-1" title="Hold Spacebar or click to compare with unedited original">
-        <i class="ph ph-eye text-xs text-[#f97316]"></i>
-        <span>Original (Space)</span>
-      </button>
+          <div class="panel-section">
+            <div class="section-label">Custom Presets</div>
+            <div class="save-preset-row">
+              <input type="text" id="input-preset-name" class="text-input" placeholder="Preset name..." />
+              <button id="btn-save-preset" class="btn btn-secondary">Save</button>
+            </div>
+            <div id="user-preset-list" class="preset-grid"></div>
+          </div>
+        </div>
+      </aside>
     </div>
 
-    <!-- Center: Subtle Keyboard Legend -->
-    <div class="hidden xl:flex items-center gap-3 text-zinc-500">
-      <span><strong class="text-zinc-400 font-medium">1-4</strong> Modes</span>
-      <span><strong class="text-zinc-400 font-medium">Tab</strong> Zen View</span>
-      <span><strong class="text-zinc-400 font-medium">←/→</strong> Prev/Next</span>
-      <span><strong class="text-zinc-400 font-medium">Double-click slider</strong> Reset</span>
-    </div>
+    <!-- Minimal Footer -->
+    <footer class="app-footer">
+      <span>&copy; 2026 Ayaan Ahmed</span>
+      <span id="status-msg" class="status-msg"></span>
+    </footer>
+  </main>
 
-    <!-- Right: Copyright -->
-    <div class="text-zinc-300 font-medium shrink-0">
-      &copy; 2026 Ayaan Ahmed
-    </div>
-  </footer>
-
-  <!-- =========================================================================
-       4. BULK & SINGLE EXPORT MODAL
-  ========================================================================== -->
-  <div id="exportModalBackdrop" class="fixed inset-0 bg-black/75 backdrop-blur-[2px] hidden items-center justify-center p-4 z-50">
-    <div class="bg-[#121214] border border-[#26262b] rounded-[4px] max-w-md w-full p-4 space-y-4 shadow-2xl">
-      <div class="flex items-center justify-between border-b border-[#26262b] pb-2.5">
-        <h3 class="font-wordmark font-bold text-base text-white">Export Photographs</h3>
-        <button id="closeExportModalBtn" class="w-6 h-6 rounded-[3px] flex items-center justify-center text-zinc-400 hover:text-white hover:bg-[#1a1a1e]">
-          <i class="ph ph-x text-sm"></i>
+  <!-- Export Modal -->
+  <div id="export-modal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>Export Photographs</h2>
+        <button id="btn-close-export" class="icon-btn">
+          <i class="ph ph-x"></i>
         </button>
       </div>
 
-      <!-- Scope Selection -->
-      <div class="space-y-1.5">
-        <label class="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Photos to Export</label>
-        <div class="grid grid-cols-3 gap-1.5">
-          <button data-exp-scope="all" class="exp-scope-btn pt-btn pt-btn-active py-2 px-2 text-xs font-medium flex flex-col items-center gap-0.5">
-            <span>All Photos</span>
-            <span id="expAllCount" class="tabular-nums text-[11px] text-zinc-400">3</span>
-          </button>
-          <button data-exp-scope="checked" class="exp-scope-btn pt-btn py-2 px-2 text-xs font-medium flex flex-col items-center gap-0.5">
-            <span>Checked</span>
-            <span id="expCheckedCount" class="tabular-nums text-[11px] text-zinc-400">3</span>
-          </button>
-          <button data-exp-scope="single" class="exp-scope-btn pt-btn py-2 px-2 text-xs font-medium flex flex-col items-center gap-0.5">
-            <span>Current Only</span>
-            <span class="tabular-nums text-[11px] text-zinc-400">1</span>
-          </button>
+      <div class="modal-body">
+        <div class="form-row">
+          <label>Target</label>
+          <select id="export-scope" class="select-input">
+            <option value="all">All Photographs in Queue</option>
+            <option value="current">Current Photograph Only</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label>Format</label>
+          <div class="format-pills">
+            <button type="button" class="format-pill active" data-format="image/webp">WebP</button>
+            <button type="button" class="format-pill" data-format="image/jpeg">JPEG</button>
+            <button type="button" class="format-pill" data-format="image/png">PNG</button>
+          </div>
+        </div>
+
+        <div id="export-quality-row" class="form-row">
+          <div class="slider-header">
+            <label>Quality</label>
+            <span id="val-export-quality" class="slider-val">90%</span>
+          </div>
+          <input type="range" id="slider-export-quality" class="studio-range" min="10" max="100" step="1" value="90" />
+        </div>
+
+        <div class="form-row">
+          <label>Resize Long Edge</label>
+          <select id="export-resize" class="select-input">
+            <option value="0">Original Resolution</option>
+            <option value="3840">3840 px (4K)</option>
+            <option value="2560">2560 px (QHD)</option>
+            <option value="1920">1920 px (Full HD)</option>
+            <option value="1280">1280 px (Web)</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label>Filename Prefix (Optional)</label>
+          <input type="text" id="export-prefix" class="text-input" placeholder="e.g. shoot-01_" />
+        </div>
+
+        <div id="export-progress-wrap" class="export-progress hidden">
+          <div class="progress-track">
+            <div id="export-progress-bar" class="progress-fill"></div>
+          </div>
+          <span id="export-progress-text" class="progress-text">Processing...</span>
         </div>
       </div>
 
-      <!-- Format Selection -->
-      <div class="space-y-1.5">
-        <label class="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400">File Format</label>
-        <div class="grid grid-cols-3 gap-1.5">
-          <button data-exp-mime="image/webp" class="exp-mime-btn pt-btn pt-btn-active py-2 text-xs font-semibold flex flex-col items-center">
-            <span>WebP</span>
-            <span class="text-[10px] font-normal text-zinc-400">Fast &amp; Small</span>
-          </button>
-          <button data-exp-mime="image/jpeg" class="exp-mime-btn pt-btn py-2 text-xs font-semibold flex flex-col items-center">
-            <span>JPEG</span>
-            <span class="text-[10px] font-normal text-zinc-400">Universal</span>
-          </button>
-          <button data-exp-mime="image/png" class="exp-mime-btn pt-btn py-2 text-xs font-semibold flex flex-col items-center">
-            <span>PNG</span>
-            <span class="text-[10px] font-normal text-zinc-400">Lossless</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Quality Slider -->
-      <div id="expQualityRow" class="space-y-1">
-        <div class="flex justify-between text-xs">
-          <span class="text-zinc-300 font-medium">Quality</span>
-          <span id="expQualityLabel" class="tabular-nums font-semibold text-[#f97316]">90%</span>
-        </div>
-        <input id="expQualityInput" type="range" min="10" max="100" value="90" class="pt-range" />
-      </div>
-
-      <!-- Output Sizing -->
-      <div class="space-y-1.5">
-        <label class="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Dimensions</label>
-        <div class="grid grid-cols-4 gap-1.5">
-          <button data-exp-dim="0" class="exp-dim-btn pt-btn pt-btn-active py-1.5 text-xs font-medium">Original</button>
-          <button data-exp-dim="2048" class="exp-dim-btn pt-btn py-1.5 text-xs font-medium tabular-nums">2048px</button>
-          <button data-exp-dim="1920" class="exp-dim-btn pt-btn py-1.5 text-xs font-medium tabular-nums">1920px</button>
-          <button data-exp-dim="custom" class="exp-dim-btn pt-btn py-1.5 text-xs font-medium">Custom</button>
-        </div>
-        <div id="customDimBox" class="hidden pt-1">
-          <input id="customMaxPxInput" type="number" min="100" max="12000" value="1600" placeholder="Max long edge in px" class="w-full bg-[#0a0a0b] border border-[#26262b] rounded-[3px] px-2.5 py-1.5 text-xs text-white tabular-nums outline-none focus:border-[#f97316]" />
-        </div>
-      </div>
-
-      <!-- Prefix & Suffix Naming -->
-      <div class="grid grid-cols-2 gap-2">
-        <div>
-          <label class="block text-[11px] text-zinc-400 mb-1">Filename Prefix</label>
-          <input id="expPrefixInput" type="text" value="" placeholder="e.g. edited_" class="w-full bg-[#0a0a0b] border border-[#26262b] rounded-[3px] px-2.5 py-1.5 text-xs text-white outline-none focus:border-[#f97316]" />
-        </div>
-        <div>
-          <label class="block text-[11px] text-zinc-400 mb-1">Filename Suffix</label>
-          <input id="expSuffixInput" type="text" value="_edit" placeholder="e.g. _edit" class="w-full bg-[#0a0a0b] border border-[#26262b] rounded-[3px] px-2.5 py-1.5 text-xs text-white outline-none focus:border-[#f97316]" />
-        </div>
-      </div>
-
-      <!-- Progress Bar -->
-      <div id="expProgressWrap" class="hidden bg-[#0a0a0b] border border-[#26262b] rounded-[3px] p-2.5 space-y-1.5">
-        <div class="flex justify-between text-xs tabular-nums">
-          <span id="expProgressText" class="text-[#f97316] font-medium">Rendering full resolution...</span>
-          <span id="expProgressCounter" class="text-zinc-300">0 / 0</span>
-        </div>
-        <div class="w-full h-1.5 bg-[#1a1a1e] rounded-[2px] overflow-hidden">
-          <div id="expProgressBar" class="h-full bg-[#f97316] w-0 transition-all duration-150"></div>
-        </div>
-      </div>
-
-      <!-- Export Actions -->
-      <div class="grid grid-cols-2 gap-2 pt-1">
-        <button id="downloadZipBtn" class="pt-btn-primary py-2 px-3 text-xs flex items-center justify-center gap-1.5">
-          <i class="ph ph-file-zip text-sm font-bold"></i>
-          <span>Export as .ZIP</span>
+      <div class="modal-footer">
+        <button id="btn-export-folder" class="btn btn-secondary">
+          <i class="ph ph-folder-Simple-arrow-down"></i>
+          <span>Save to Folder</span>
         </button>
-        <button id="downloadIndividualBtn" class="pt-btn py-2 px-3 text-xs font-semibold flex items-center justify-center gap-1.5 text-zinc-200">
-          <i class="ph ph-download-simple text-sm text-[#f97316]"></i>
-          <span>Individual Files</span>
+        <button id="btn-export-zip" class="btn btn-primary">
+          <i class="ph ph-download-simple"></i>
+          <span>Download</span>
         </button>
       </div>
     </div>
   </div>
 
-  <!-- =========================================================================
-       5. NON-INTRUSIVE STATUS TOAST
-  ========================================================================== -->
-  <div id="ptToast" class="fixed bottom-10 right-4 bg-[#1a1a1e] border border-[#f97316] text-white text-xs font-medium px-3 py-1.5 rounded-[4px] shadow-xl hidden items-center gap-2 z-50">
-    <span class="w-1.5 h-1.5 rounded-full bg-[#f97316]"></span>
-    <span id="ptToastText">Done</span>
-  </div>
-
-  <!-- =========================================================================
-       6. PICTURE THIS — GPU SHADER & WORKFLOW ENGINE
-  ========================================================================== -->
-  <script>
-    /***************************************************************************
-     * 1. SLIDER DEFINITIONS & CURATED PHOTOGRAPHY PRESETS
-     ***************************************************************************/
-    const SLIDERS = {
-      light: [
-        { key: 'exposure', label: 'Exposure', min: -100, max: 100, def: 0 },
-        { key: 'brightness', label: 'Brightness', min: -100, max: 100, def: 0 },
-        { key: 'contrast', label: 'Contrast', min: -100, max: 100, def: 0 },
-        { key: 'highlights', label: 'Highlights', min: -100, max: 100, def: 0 },
-        { key: 'shadows', label: 'Shadows', min: -100, max: 100, def: 0 },
-        { key: 'whites', label: 'Whites', min: -100, max: 100, def: 0 },
-        { key: 'blacks', label: 'Blacks', min: -100, max: 100, def: 0 }
-      ],
-      color: [
-        { key: 'temperature', label: 'Temperature', min: -100, max: 100, def: 0, rail: 'pt-slider-rail-temp' },
-        { key: 'tint', label: 'Tint', min: -100, max: 100, def: 0, rail: 'pt-slider-rail-tint' },
-        { key: 'vibrance', label: 'Vibrance', min: -100, max: 100, def: 0 },
-        { key: 'saturation', label: 'Saturation', min: -100, max: 100, def: 0 }
-      ],
-      finish: [
-        { key: 'clarity', label: 'Clarity', min: -100, max: 100, def: 0 },
-        { key: 'sharpen', label: 'Sharpen', min: 0, max: 100, def: 0 },
-        { key: 'vignette', label: 'Vignette', min: -100, max: 100, def: 0 },
-        { key: 'grain', label: 'Film Grain', min: 0, max: 100, def: 0 }
-      ],
-      mask: [
-        { key: 'exposure', label: 'Exposure', min: -100, max: 100, def: 0 },
-        { key: 'brightness', label: 'Brightness', min: -100, max: 100, def: 0 },
-        { key: 'contrast', label: 'Contrast', min: -100, max: 100, def: 0 },
-        { key: 'highlights', label: 'Highlights', min: -100, max: 100, def: 0 },
-        { key: 'shadows', label: 'Shadows', min: -100, max: 100, def: 0 },
-        { key: 'temperature', label: 'Temperature', min: -100, max: 100, def: 0, rail: 'pt-slider-rail-temp' },
-        { key: 'saturation', label: 'Saturation', min: -100, max: 100, def: 0 },
-        { key: 'sharpen', label: 'Sharpness', min: 0, max: 100, def: 0 }
-      ]
-    };
-
-    const BUILTIN_PRESETS = [
-      {
-        name: 'Clean Natural',
-        tag: 'Neutral',
-        values: { exposure: 4, brightness: 2, contrast: 10, highlights: -14, shadows: 12, whites: 6, blacks: -4, temperature: 2, tint: 0, vibrance: 14, saturation: 0, clarity: 8, sharpen: 12, vignette: 0, grain: 0 }
-      },
-      {
-        name: 'Kodak Portra',
-        tag: 'Warm Film',
-        values: { exposure: 6, brightness: 4, contrast: -6, highlights: -24, shadows: 22, whites: 6, blacks: 8, temperature: 16, tint: 4, vibrance: 18, saturation: -6, clarity: -4, sharpen: 8, vignette: -12, grain: 20 }
-      },
-      {
-        name: 'Fuji Velvia',
-        tag: 'Landscape',
-        values: { exposure: 2, brightness: 0, contrast: 22, highlights: -18, shadows: 8, whites: 12, blacks: -14, temperature: 4, tint: -3, vibrance: 32, saturation: 16, clarity: 16, sharpen: 20, vignette: -14, grain: 6 }
-      },
-      {
-        name: 'Ilford HP5 B&W',
-        tag: 'Monochrome',
-        values: { exposure: 4, brightness: 0, contrast: 32, highlights: -10, shadows: 10, whites: 18, blacks: -20, temperature: 0, tint: 0, vibrance: 0, saturation: -100, clarity: 24, sharpen: 22, vignette: -22, grain: 30 }
-      },
-      {
-        name: 'Punchy Contrast',
-        tag: 'Crisp',
-        values: { exposure: 3, brightness: 0, contrast: 26, highlights: -20, shadows: 14, whites: 12, blacks: -14, temperature: 0, tint: 0, vibrance: 16, saturation: 4, clarity: 22, sharpen: 18, vignette: -10, grain: 0 }
-      },
-      {
-        name: 'Warm Golden',
-        tag: 'Sunset',
-        values: { exposure: 5, brightness: 4, contrast: 12, highlights: -18, shadows: 18, whites: 8, blacks: -6, temperature: 28, tint: 4, vibrance: 22, saturation: 6, clarity: 6, sharpen: 10, vignette: -15, grain: 10 }
-      },
-      {
-        name: 'Matte Fade',
-        tag: 'Editorial',
-        values: { exposure: 2, brightness: 6, contrast: -14, highlights: -22, shadows: 28, whites: -8, blacks: 26, temperature: 6, tint: 2, vibrance: 10, saturation: -12, clarity: -6, sharpen: 6, vignette: -12, grain: 18 }
-      },
-      {
-        name: 'High Key Airy',
-        tag: 'Bright',
-        values: { exposure: 16, brightness: 12, contrast: -8, highlights: -26, shadows: 32, whites: 14, blacks: 10, temperature: 4, tint: 2, vibrance: 12, saturation: -6, clarity: -8, sharpen: 10, vignette: 0, grain: 6 }
-      }
-    ];
-
-    /***************************************************************************
-     * 2. APPLICATION STATE
-     ***************************************************************************/
-    const state = {
-      photos: [],
-      activePhotoId: null,
-      mode: 'edit',                // 'edit' | 'crop' | 'mask' | 'presets'
-      mobileTab: 'light',          // 'light' | 'color' | 'finish' | 'crop' | 'mask' | 'presets'
-      leftOpen: true,
-      rightOpen: true,
-      mobileStripOpen: true,
-      activeMaskId: null,
-      showMaskOverlay: true,
-      isComparing: false,
-      zoom: 1,
-      bypass: { light: false, color: false, finish: false },
-      clipboard: null,
-      customPresets: [],
-      brush: {
-        mode: 'paint',
-        size: 64,
-        feather: 65,
-        x: -1000,
-        y: -1000,
-        hovering: false
-      },
-      exportOpts: {
-        scope: 'all',
-        mime: 'image/webp',
-        quality: 0.90,
-        maxDim: 0,
-        prefix: '',
-        suffix: '_edit'
-      }
-    };
-
-    // Load saved custom presets from localStorage safely
-    try {
-      const saved = localStorage.getItem('picture_this_custom_presets_v1');
-      if (saved) state.customPresets = JSON.parse(saved);
-    } catch (_) {}
-
-    function defaultAdjustments() {
-      return {
-        exposure: 0, brightness: 0, contrast: 0, highlights: 0, shadows: 0, whites: 0, blacks: 0,
-        temperature: 0, tint: 0, vibrance: 0, saturation: 0,
-        clarity: 0, sharpen: 0, vignette: 0, grain: 0
-      };
-    }
-
-    function defaultTransform() {
-      return {
-        rot90: 0,
-        straighten: 0,
-        autoScale: true,
-        flipH: false,
-        flipV: false,
-        aspect: 'free',
-        cropBox: { x: 0, y: 0, w: 1, h: 1 }
-      };
-    }
-
-    function defaultMaskGrade() {
-      return {
-        exposure: 0, brightness: 0, contrast: 0, highlights: 0,
-        shadows: 0, temperature: 0, saturation: 0, sharpen: 0
-      };
-    }
-
-    /***************************************************************************
-     * 3. ON-DEMAND WEBGL SHADER ENGINE (0% IDLE CPU/GPU USAGE)
-     ***************************************************************************/
-    let gl = null;
-    let glProgram = null;
-    let glPosBuffer = null;
-    let glTexBuffer = null;
-    let glMainTexture = null;
-    let glMaskTexture = null;
-    let glUniforms = {};
-    let uploadedTexSignature = '';
-    let renderScheduled = false;
-
-    // Geometry cache so moving sliders never re-runs 2D rotation/crop
-    let geomCache = {
-      photoId: null,
-      signature: '',
-      canvas: document.createElement('canvas')
-    };
-
-    // Composite mask alpha canvas (512x512) uploaded to GPU texture unit 1
-    const maskAlphaCanvas = document.createElement('canvas');
-    maskAlphaCanvas.width = 512;
-    maskAlphaCanvas.height = 512;
-
-    const VERTEX_SHADER_SRC = `
-      attribute vec2 a_pos;
-      attribute vec2 a_tex;
-      varying vec2 v_uv;
-      void main() {
-        gl_Position = vec4(a_pos, 0.0, 1.0);
-        v_uv = a_tex;
-      }
-    `;
-
-    const FRAGMENT_SHADER_SRC = `
-      precision highp float;
-      varying vec2 v_uv;
-      uniform sampler2D u_image;
-      uniform sampler2D u_mask;
-      uniform vec2 u_texSize;
-
-      // Global grade uniforms
-      uniform float u_exposure;
-      uniform float u_brightness;
-      uniform float u_contrast;
-      uniform float u_highlights;
-      uniform float u_shadows;
-      uniform float u_whites;
-      uniform float u_blacks;
-      uniform float u_temp;
-      uniform float u_tint;
-      uniform float u_vibrance;
-      uniform float u_saturation;
-      uniform float u_clarity;
-      uniform float u_sharpen;
-      uniform float u_vignette;
-      uniform float u_grain;
-
-      // Active mask local grade uniforms
-      uniform int u_hasMask;
-      uniform int u_showOverlay;
-      uniform float u_mExposure;
-      uniform float u_mBrightness;
-      uniform float u_mContrast;
-      uniform float u_mHighlights;
-      uniform float u_mShadows;
-      uniform float u_mTemp;
-      uniform float u_mSaturation;
-      uniform float u_mSharpen;
-
-      vec3 applyGrade(vec3 col, vec3 blurCol, vec3 sharpDetail,
-                      float expV, float brtV, float conV, float hiV, float shV,
-                      float whV, float blV, float tmpV, float tntV,
-                      float vibV, float satV, float clrV, float shpV) {
-        // Sharpening
-        col += sharpDetail * (shpV * 1.4);
-
-        // Exposure & Brightness
-        float expMult = pow(2.0, expV * 1.8);
-        col = col * expMult + (brtV * 0.45);
-
-        // Temperature & Tint
-        col.r += tmpV * 0.28;
-        col.b -= tmpV * 0.28;
-        col.g -= tntV * 0.24;
-
-        // Clarity (local midtone structure punch)
-        float lumaBase = clamp(dot(col, vec3(0.299, 0.587, 0.114)), 0.0, 1.0);
-        float midMask = 4.0 * lumaBase * (1.0 - lumaBase);
-        col += (col - blurCol) * (clrV * 1.35 * midMask);
-
-        // Contrast
-        float conFac = pow(1.0 + conV * 0.85, 2.0);
-        col = (col - 0.5) * conFac + 0.5;
-
-        // Highlights, Shadows, Whites, Blacks
-        float luma = clamp(dot(col, vec3(0.299, 0.587, 0.114)), 0.0, 1.0);
-        float invL = 1.0 - luma;
-        float shMask = invL * invL;
-        float hiMask = luma * luma;
-        float whMask = hiMask * luma;
-        float blMask = shMask * invL;
-
-        float toneDelta = (shV * 0.48 * shMask)
-                        + (hiV * 0.48 * hiMask)
-                        + (whV * 0.42 * whMask)
-                        + (blV * 0.42 * blMask);
-        col += vec3(toneDelta);
-
-        // Vibrance & Saturation
-        float gray = dot(col, vec3(0.299, 0.587, 0.114));
-        float maxC = max(col.r, max(col.g, col.b));
-        float minC = min(col.r, min(col.g, col.b));
-        float curSat = clamp(maxC - minC, 0.0, 1.0);
-        float satFac = 1.0 + satV + (vibV * (1.0 - curSat));
-        col = mix(vec3(gray), col, max(0.0, satFac));
-
-        return clamp(col, 0.0, 1.0);
-      }
-
-      void main() {
-        vec2 px = 1.0 / max(u_texSize, vec2(1.0));
-        vec3 center = texture2D(u_image, v_uv).rgb;
-
-        // Fast 5-tap neighborhood sample for Clarity & Sharpen
-        vec3 n1 = texture2D(u_image, v_uv + vec2(-px.x, 0.0)).rgb;
-        vec3 n2 = texture2D(u_image, v_uv + vec2( px.x, 0.0)).rgb;
-        vec3 n3 = texture2D(u_image, v_uv + vec2(0.0, -px.y)).rgb;
-        vec3 n4 = texture2D(u_image, v_uv + vec2(0.0,  px.y)).rgb;
-        vec3 avg4 = 0.25 * (n1 + n2 + n3 + n4);
-        vec3 sharpDetail = center - avg4;
-
-        // Wide neighborhood sample for midtone Clarity
-        vec2 wpx = px * 3.5;
-        vec3 b1 = texture2D(u_image, v_uv + vec2(-wpx.x, -wpx.y)).rgb;
-        vec3 b2 = texture2D(u_image, v_uv + vec2( wpx.x, -wpx.y)).rgb;
-        vec3 b3 = texture2D(u_image, v_uv + vec2(-wpx.x,  wpx.y)).rgb;
-        vec3 b4 = texture2D(u_image, v_uv + vec2( wpx.x,  wpx.y)).rgb;
-        vec3 blurCol = 0.25 * (b1 + b2 + b3 + b4);
-
-        vec3 col = applyGrade(
-          center, blurCol, sharpDetail,
-          u_exposure, u_brightness, u_contrast, u_highlights, u_shadows,
-          u_whites, u_blacks, u_temp, u_tint,
-          u_vibrance, u_saturation, u_clarity, u_sharpen
-        );
-
-        // Local Mask Compositing
-        if (u_hasMask == 1) {
-          float mAlpha = texture2D(u_mask, v_uv).r;
-          if (mAlpha > 0.003) {
-            vec3 maskedCol = applyGrade(
-              col, col, sharpDetail,
-              u_mExposure, u_mBrightness, u_mContrast, u_mHighlights, u_mShadows,
-              0.0, 0.0, u_mTemp, 0.0,
-              0.0, u_mSaturation, 0.0, u_mSharpen
-            );
-            col = mix(col, maskedCol, mAlpha);
-            if (u_showOverlay == 1) {
-              col = mix(col, vec3(0.976, 0.451, 0.086), mAlpha * 0.45);
-            }
-          }
-        }
-
-        // Vignette
-        if (abs(u_vignette) > 0.001) {
-          vec2 d = v_uv - vec2(0.5);
-          float distSq = dot(d, d) * 2.3;
-          float vig = clamp(1.0 + u_vignette * distSq, 0.0, 2.0);
-          col *= vig;
-        }
-
-        // Film Grain
-        if (u_grain > 0.001) {
-          float noise = fract(sin(dot(v_uv * u_texSize, vec2(12.9898, 78.233))) * 43758.5453) - 0.5;
-          col += vec3(noise * u_grain * 0.16);
-        }
-
-        gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
-      }
-    `;
-
-    function initWebGLEngine() {
-      const canvas = document.getElementById('glPhotoCanvas');
-      gl = canvas.getContext('webgl', { preserveDrawingBuffer: true, antialias: false });
-      if (!gl) return false;
-
-      const vs = compileShader(gl.VERTEX_SHADER, VERTEX_SHADER_SRC);
-      const fs = compileShader(gl.FRAGMENT_SHADER, FRAGMENT_SHADER_SRC);
-      if (!vs || !fs) return false;
-
-      glProgram = gl.createProgram();
-      gl.attachShader(glProgram, vs);
-      gl.attachShader(glProgram, fs);
-      gl.linkProgram(glProgram);
-      gl.useProgram(glProgram);
-
-      // Fullscreen quad
-      glPosBuffer = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, glPosBuffer);
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-        -1, -1,  1, -1, -1,  1,
-        -1,  1,  1, -1,  1,  1
-      ]), gl.STATIC_DRAW);
-
-      const aPos = gl.getAttribLocation(glProgram, 'a_pos');
-      gl.enableVertexAttribArray(aPos);
-      gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
-
-      glTexBuffer = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, glTexBuffer);
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-        0, 1,  1, 1,  0, 0,
-        0, 0,  1, 1,  1, 0
-      ]), gl.STATIC_DRAW);
-
-      const aTex = gl.getAttribLocation(glProgram, 'a_tex');
-      gl.enableVertexAttribArray(aTex);
-      gl.vertexAttribPointer(aTex, 2, gl.FLOAT, false, 0, 0);
-
-      glMainTexture = createGLTexture();
-      glMaskTexture = createGLTexture();
-
-      const names = [
-        'u_image', 'u_mask', 'u_texSize',
-        'u_exposure', 'u_brightness', 'u_contrast', 'u_highlights', 'u_shadows', 'u_whites', 'u_blacks',
-        'u_temp', 'u_tint', 'u_vibrance', 'u_saturation',
-        'u_clarity', 'u_sharpen', 'u_vignette', 'u_grain',
-        'u_hasMask', 'u_showOverlay',
-        'u_mExposure', 'u_mBrightness', 'u_mContrast', 'u_mHighlights', 'u_mShadows', 'u_mTemp', 'u_mSaturation', 'u_mSharpen'
-      ];
-      names.forEach(n => { glUniforms[n] = gl.getUniformLocation(glProgram, n); });
-
-      return true;
-    }
-
-    function compileShader(type, src) {
-      const s = gl.createShader(type);
-      gl.shaderSource(s, src);
-      gl.compileShader(s);
-      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
-        console.error(gl.getShaderInfoLog(s));
-        return null;
-      }
-      return s;
-    }
-
-    function createGLTexture() {
-      const tex = gl.createTexture();
-      gl.bindTexture(gl.TEXTURE_2D, tex);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      return tex;
-    }
-
-    /***************************************************************************
-     * 4. ON-DEMAND RENDERING & GEOMETRY PIPELINE
-     ***************************************************************************/
-    function requestRender() {
-      if (renderScheduled) return;
-      renderScheduled = true;
-      requestAnimationFrame(() => {
-        renderScheduled = false;
-        const photo = getActivePhoto();
-        if (!photo) return;
-        renderPhotoOnStage(photo);
-        fitCanvasInStage();
-        drawInteractiveStageOverlay();
-      });
-    }
-
-    function buildGeometryCanvas(sourceImgOrCanvas, tr, applyCrop, maxExportEdge, targetCanvas) {
-      const rot90 = ((tr.rot90 % 360) + 360) % 360;
-      const swap = rot90 === 90 || rot90 === 270;
-      const srcW = sourceImgOrCanvas.width;
-      const srcH = sourceImgOrCanvas.height;
-      const baseW = swap ? srcH : srcW;
-      const baseH = swap ? srcW : srcH;
-
-      const rad = (tr.straighten * Math.PI) / 180;
-      let autoZoom = 1;
-      if (tr.autoScale && Math.abs(tr.straighten) > 0.01) {
-        const s = Math.abs(Math.sin(rad));
-        const c = Math.abs(Math.cos(rad));
-        autoZoom = Math.max((baseW * c + baseH * s) / baseW, (baseH * c + baseW * s) / baseH);
-      }
-
-      const workC = document.createElement('canvas');
-      workC.width = baseW;
-      workC.height = baseH;
-      const wCtx = workC.getContext('2d');
-      wCtx.fillStyle = '#0a0a0b';
-      wCtx.fillRect(0, 0, baseW, baseH);
-      wCtx.imageSmoothingEnabled = true;
-      wCtx.imageSmoothingQuality = 'high';
-
-      wCtx.save();
-      wCtx.translate(baseW / 2, baseH / 2);
-      wCtx.rotate((rot90 * Math.PI) / 180 + rad);
-      wCtx.scale((tr.flipH ? -1 : 1) * autoZoom, (tr.flipV ? -1 : 1) * autoZoom);
-      wCtx.drawImage(sourceImgOrCanvas, -srcW / 2, -srcH / 2);
-      wCtx.restore();
-
-      const cb = applyCrop ? tr.cropBox : { x: 0, y: 0, w: 1, h: 1 };
-      const sx = Math.round(cb.x * baseW);
-      const sy = Math.round(cb.y * baseH);
-      const sw = Math.max(1, Math.round(cb.w * baseW));
-      const sh = Math.max(1, Math.round(cb.h * baseH));
-
-      let outW = sw;
-      let outH = sh;
-      if (maxExportEdge > 0 && Math.max(sw, sh) > maxExportEdge) {
-        const sc = maxExportEdge / Math.max(sw, sh);
-        outW = Math.max(1, Math.round(sw * sc));
-        outH = Math.max(1, Math.round(sh * sc));
-      }
-
-      targetCanvas.width = outW;
-      targetCanvas.height = outH;
-      const tCtx = targetCanvas.getContext('2d');
-      tCtx.imageSmoothingEnabled = true;
-      tCtx.imageSmoothingQuality = 'high';
-      tCtx.drawImage(workC, sx, sy, sw, sh, 0, 0, outW, outH);
-    }
-
-    function updateMaskAlphaCanvas(mask) {
-      const w = maskAlphaCanvas.width;
-      const h = maskAlphaCanvas.height;
-      const mCtx = maskAlphaCanvas.getContext('2d');
-      mCtx.clearRect(0, 0, w, h);
-
-      if (!mask || !mask.enabled) return;
-
-      if (mask.type === 'linear') {
-        const g = mCtx.createLinearGradient(mask.x1 * w, mask.y1 * h, mask.x2 * w, mask.y2 * h);
-        g.addColorStop(0, mask.invert ? 'rgb(0,0,0)' : 'rgb(255,255,255)');
-        g.addColorStop(1, mask.invert ? 'rgb(255,255,255)' : 'rgb(0,0,0)');
-        mCtx.fillStyle = g;
-        mCtx.fillRect(0, 0, w, h);
-      } else if (mask.type === 'radial') {
-        mCtx.save();
-        mCtx.fillStyle = mask.invert ? 'rgb(255,255,255)' : 'rgb(0,0,0)';
-        mCtx.fillRect(0, 0, w, h);
-
-        mCtx.translate(mask.cx * w, mask.cy * h);
-        mCtx.scale(Math.max(0.02, mask.rx), Math.max(0.02, mask.ry));
-        const innerR = w * (1 - Math.max(0.08, mask.feather));
-        const outerR = w;
-        const rg = mCtx.createRadialGradient(0, 0, innerR, 0, 0, outerR);
-        rg.addColorStop(0, mask.invert ? 'rgb(0,0,0)' : 'rgb(255,255,255)');
-        rg.addColorStop(1, mask.invert ? 'rgb(255,255,255)' : 'rgb(0,0,0)');
-        mCtx.fillStyle = rg;
-        mCtx.beginPath();
-        mCtx.arc(0, 0, outerR * 2, 0, Math.PI * 2);
-        mCtx.fill();
-        mCtx.restore();
-      } else if (mask.type === 'brush' && mask.brushCanvas) {
-        mCtx.fillStyle = mask.invert ? 'rgb(255,255,255)' : 'rgb(0,0,0)';
-        mCtx.fillRect(0, 0, w, h);
-        if (mask.invert) {
-          mCtx.globalCompositeOperation = 'destination-out';
-          mCtx.drawImage(mask.brushCanvas, 0, 0, w, h);
-          mCtx.globalCompositeOperation = 'source-over';
-        } else {
-          mCtx.drawImage(mask.brushCanvas, 0, 0, w, h);
-        }
-      }
-    }
-
-    function renderPhotoWithWebGL(photo, sourceGeomCanvas, outCanvas, isPreview) {
-      const w = sourceGeomCanvas.width;
-      const h = sourceGeomCanvas.height;
-
-      if (outCanvas.width !== w || outCanvas.height !== h) {
-        outCanvas.width = w;
-        outCanvas.height = h;
-      }
-
-      gl.viewport(0, 0, w, h);
-      gl.useProgram(glProgram);
-
-      // Upload image texture
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, glMainTexture);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, sourceGeomCanvas);
-      gl.uniform1i(glUniforms.u_image, 0);
-      gl.uniform2f(glUniforms.u_texSize, w, h);
-
-      const raw = photo.adjustments;
-      const isOrig = isPreview && state.isComparing;
-
-      const lOn = !isOrig && !state.bypass.light;
-      const cOn = !isOrig && !state.bypass.color;
-      const fOn = !isOrig && !state.bypass.finish;
-
-      gl.uniform1f(glUniforms.u_exposure, lOn ? raw.exposure / 100 : 0);
-      gl.uniform1f(glUniforms.u_brightness, lOn ? raw.brightness / 100 : 0);
-      gl.uniform1f(glUniforms.u_contrast, lOn ? raw.contrast / 100 : 0);
-      gl.uniform1f(glUniforms.u_highlights, lOn ? raw.highlights / 100 : 0);
-      gl.uniform1f(glUniforms.u_shadows, lOn ? raw.shadows / 100 : 0);
-      gl.uniform1f(glUniforms.u_whites, lOn ? raw.whites / 100 : 0);
-      gl.uniform1f(glUniforms.u_blacks, lOn ? raw.blacks / 100 : 0);
-
-      gl.uniform1f(glUniforms.u_temp, cOn ? raw.temperature / 100 : 0);
-      gl.uniform1f(glUniforms.u_tint, cOn ? raw.tint / 100 : 0);
-      gl.uniform1f(glUniforms.u_vibrance, cOn ? raw.vibrance / 100 : 0);
-      gl.uniform1f(glUniforms.u_saturation, cOn ? raw.saturation / 100 : 0);
-
-      gl.uniform1f(glUniforms.u_clarity, fOn ? raw.clarity / 100 : 0);
-      gl.uniform1f(glUniforms.u_sharpen, fOn ? raw.sharpen / 100 : 0);
-      gl.uniform1f(glUniforms.u_vignette, fOn ? raw.vignette / 100 : 0);
-      gl.uniform1f(glUniforms.u_grain, fOn ? raw.grain / 100 : 0);
-
-      // Active mask pass
-      const activeMask = !isOrig && !(isPreview && state.mode === 'crop') ? getActiveMask(photo) : null;
-      if (activeMask && activeMask.enabled) {
-        updateMaskAlphaCanvas(activeMask);
-        gl.activeTexture(gl.TEXTURE1);
-        gl.bindTexture(gl.TEXTURE_2D, glMaskTexture);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, maskAlphaCanvas);
-        gl.uniform1i(glUniforms.u_mask, 1);
-
-        const mg = activeMask.grade;
-        gl.uniform1i(glUniforms.u_hasMask, 1);
-        gl.uniform1i(glUniforms.u_showOverlay, isPreview && state.mode === 'mask' && state.showMaskOverlay ? 1 : 0);
-        gl.uniform1f(glUniforms.u_mExposure, mg.exposure / 100);
-        gl.uniform1f(glUniforms.u_mBrightness, mg.brightness / 100);
-        gl.uniform1f(glUniforms.u_mContrast, mg.contrast / 100);
-        gl.uniform1f(glUniforms.u_mHighlights, mg.highlights / 100);
-        gl.uniform1f(glUniforms.u_mShadows, mg.shadows / 100);
-        gl.uniform1f(glUniforms.u_mTemp, mg.temperature / 100);
-        gl.uniform1f(glUniforms.u_mSaturation, mg.saturation / 100);
-        gl.uniform1f(glUniforms.u_mSharpen, mg.sharpen / 100);
-      } else {
-        gl.uniform1i(glUniforms.u_hasMask, 0);
-        gl.uniform1i(glUniforms.u_showOverlay, 0);
-      }
-
-      gl.drawArrays(gl.TRIANGLES, 0, 6);
-    }
-
-    function renderPhotoOnStage(photo) {
-      const tr = photo.transform;
-      const inCrop = state.mode === 'crop';
-      const applyCrop = !inCrop;
-      const sig = `${photo.id}_${tr.rot90}_${tr.straighten.toFixed(2)}_${tr.autoScale}_${tr.flipH}_${tr.flipV}_${
-        applyCrop ? `${tr.cropBox.x.toFixed(4)}_${tr.cropBox.y.toFixed(4)}_${tr.cropBox.w.toFixed(4)}_${tr.cropBox.h.toFixed(4)}` : 'full'
-      }`;
-
-      if (geomCache.signature !== sig) {
-        buildGeometryCanvas(photo.proxyCanvas, tr, applyCrop, 0, geomCache.canvas);
-        geomCache.photoId = photo.id;
-        geomCache.signature = sig;
-      }
-
-      const glCanvas = document.getElementById('glPhotoCanvas');
-      renderPhotoWithWebGL(photo, geomCache.canvas, glCanvas, true);
-    }
-
-    function fitCanvasInStage() {
-      const glCanvas = document.getElementById('glPhotoCanvas');
-      const overlay = document.getElementById('interactiveOverlayCanvas');
-      const stage = document.getElementById('viewportStage');
-      if (!glCanvas.width || !glCanvas.height) return;
-
-      const isMobile = window.innerWidth <= 860;
-      const pad = isMobile ? 16 : 36;
-      const availW = Math.max(120, stage.clientWidth - pad);
-      const availH = Math.max(120, stage.clientHeight - pad);
-
-      const scale = Math.min(availW / glCanvas.width, availH / glCanvas.height) * state.zoom;
-      const dispW = Math.max(1, Math.round(glCanvas.width * scale));
-      const dispH = Math.max(1, Math.round(glCanvas.height * scale));
-
-      glCanvas.style.width = `${dispW}px`;
-      glCanvas.style.height = `${dispH}px`;
-
-      overlay.width = dispW;
-      overlay.height = dispH;
-      overlay.style.width = `${dispW}px`;
-      overlay.style.height = `${dispH}px`;
-    }
-
-    /***************************************************************************
-     * 5. LOW-RAM FILE IMPORT & 1280PX PROXY GENERATOR
-     ***************************************************************************/
-    async function importFileList(fileList) {
-      const files = Array.from(fileList).filter(f =>
-        f.type.startsWith('image/') || /\.(jpg|jpeg|png|webp|avif|bmp)$/i.test(f.name)
-      );
-      if (!files.length) return;
-
-      for (const file of files) {
-        try {
-          let bitmap;
-          if ('createImageBitmap' in window) {
-            bitmap = await createImageBitmap(file);
-          } else {
-            bitmap = await loadImgElement(file);
-          }
-          registerPhotoItem(bitmap, file.name, file);
-          if (bitmap.close) bitmap.close();
-        } catch (err) {
-          console.error('Failed to decode photo:', file.name, err);
-        }
-      }
-    }
-
-    function loadImgElement(file) {
-      return new Promise((resolve, reject) => {
-        const url = URL.createObjectURL(file);
-        const img = new Image();
-        img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
-        img.onerror = (e) => { URL.revokeObjectURL(url); reject(e); };
-        img.src = url;
-      });
-    }
-
-    function registerPhotoItem(sourceBitmapOrCanvas, filename, rawFile = null) {
-      const origW = sourceBitmapOrCanvas.width;
-      const origH = sourceBitmapOrCanvas.height;
-
-      // 1280px lightweight proxy for zero-throttling 60fps grading on a 2020 MacBook
-      const maxProxy = 1280;
-      const sc = Math.min(1, maxProxy / Math.max(origW, origH));
-      const proxyW = Math.max(1, Math.round(origW * sc));
-      const proxyH = Math.max(1, Math.round(origH * sc));
-
-      const proxyCanvas = document.createElement('canvas');
-      proxyCanvas.width = proxyW;
-      proxyCanvas.height = proxyH;
-      const pCtx = proxyCanvas.getContext('2d');
-      pCtx.imageSmoothingEnabled = true;
-      pCtx.imageSmoothingQuality = 'high';
-      pCtx.drawImage(sourceBitmapOrCanvas, 0, 0, proxyW, proxyH);
-
-      // Tiny 140px filmstrip thumbnail
-      const thumbC = document.createElement('canvas');
-      thumbC.width = 140;
-      thumbC.height = 94;
-      const tCtx = thumbC.getContext('2d');
-      const tSc = Math.max(140 / proxyW, 94 / proxyH);
-      const tw = proxyW * tSc;
-      const th = proxyH * tSc;
-      tCtx.drawImage(proxyCanvas, (140 - tw) / 2, (94 - th) / 2, tw, th);
-
-      const dot = filename.lastIndexOf('.');
-      const baseName = dot > 0 ? filename.slice(0, dot) : filename;
-
-      const photo = {
-        id: 'pt_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-        name: filename,
-        baseName,
-        origWidth: origW,
-        origHeight: origH,
-        rawFile,
-        sampleCanvas: rawFile ? null : sourceBitmapOrCanvas,
-        proxyCanvas,
-        thumbUrl: thumbC.toDataURL('image/jpeg', 0.82),
-        checked: true,
-        adjustments: defaultAdjustments(),
-        transform: defaultTransform(),
-        masks: [],
-        history: [],
-        historyIdx: -1
-      };
-
-      pushHistory(photo, 'Imported Original');
-      state.photos.push(photo);
-
-      if (!state.activePhotoId) {
-        state.activePhotoId = photo.id;
-      }
-
-      renderFilmstrips();
-      syncAllUI();
-      requestRender();
-    }
-
-    function loadSamplePhotographs() {
-      const specs = [
-        { name: 'Brutalist_Warmth.jpg', type: 'arch', w: 1920, h: 1280 },
-        { name: 'Desert_Dusk_Portrait.jpg', type: 'dusk', w: 1440, h: 1800 },
-        { name: 'Kyoto_Alley_Neon.jpg', type: 'night', w: 1920, h: 1080 }
-      ];
-
-      specs.forEach(s => {
-        const c = document.createElement('canvas');
-        c.width = s.w;
-        c.height = s.h;
-        const ctx = c.getContext('2d');
-
-        if (s.type === 'arch') {
-          const g = ctx.createLinearGradient(0, 0, s.w * 0.7, s.h);
-          g.addColorStop(0, '#0f172a');
-          g.addColorStop(0.55, '#1d4ed8');
-          g.addColorStop(1, '#93c5fd');
-          ctx.fillStyle = g;
-          ctx.fillRect(0, 0, s.w, s.h);
-
-          ctx.fillStyle = '#f4f4f0';
-          ctx.beginPath();
-          ctx.moveTo(s.w * 0.12, s.h);
-          ctx.lineTo(s.w * 0.46, s.h * 0.14);
-          ctx.lineTo(s.w * 0.86, s.h * 0.14);
-          ctx.lineTo(s.w * 0.86, s.h);
-          ctx.fill();
-
-          ctx.fillStyle = '#27272a';
-          ctx.beginPath();
-          ctx.moveTo(s.w * 0.46, s.h * 0.14);
-          ctx.lineTo(s.w * 0.64, s.h * 0.30);
-          ctx.lineTo(s.w * 0.64, s.h);
-          ctx.lineTo(s.w * 0.12, s.h);
-          ctx.fill();
-
-          ctx.fillStyle = '#f97316';
-          ctx.fillRect(s.w * 0.71, s.h * 0.28, s.w * 0.08, s.h * 0.52);
-        } else if (s.type === 'dusk') {
-          const g = ctx.createLinearGradient(0, 0, 0, s.h);
-          g.addColorStop(0, '#18181b');
-          g.addColorStop(0.45, '#9a3412');
-          g.addColorStop(0.78, '#f97316');
-          g.addColorStop(1, '#fde047');
-          ctx.fillStyle = g;
-          ctx.fillRect(0, 0, s.w, s.h);
-
-          const sun = ctx.createRadialGradient(s.w * 0.5, s.h * 0.42, 20, s.w * 0.5, s.h * 0.42, s.w * 0.45);
-          sun.addColorStop(0, 'rgba(255,255,240,0.94)');
-          sun.addColorStop(0.5, 'rgba(249,115,22,0.35)');
-          sun.addColorStop(1, 'transparent');
-          ctx.fillStyle = sun;
-          ctx.fillRect(0, 0, s.w, s.h);
-
-          ctx.fillStyle = '#18181b';
-          ctx.beginPath();
-          ctx.arc(s.w * 0.5, s.h * 0.54, s.w * 0.11, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.beginPath();
-          ctx.ellipse(s.w * 0.5, s.h * 0.86, s.w * 0.27, s.h * 0.24, 0, Math.PI, 0);
-          ctx.fill();
-        } else {
-          const bg = ctx.createLinearGradient(0, 0, s.w, s.h);
-          bg.addColorStop(0, '#09090b');
-          bg.addColorStop(0.5, '#1e1b4b');
-          bg.addColorStop(1, '#3b0764');
-          ctx.fillStyle = bg;
-          ctx.fillRect(0, 0, s.w, s.h);
-
-          const cols = ['#f97316', '#38bdf8', '#f43f5e', '#eab308', '#a855f7'];
-          for (let i = 0; i < 42; i++) {
-            const x = (i * 229) % s.w;
-            const y = (i * 151) % s.h;
-            const r = 34 + (i % 6) * 24;
-            const col = cols[i % cols.length];
-            const rad = ctx.createRadialGradient(x, y, 2, x, y, r);
-            rad.addColorStop(0, col);
-            rad.addColorStop(0.55, col + '44');
-            rad.addColorStop(1, 'transparent');
-            ctx.fillStyle = rad;
-            ctx.beginPath();
-            ctx.arc(x, y, r, 0, Math.PI * 2);
-            ctx.fill();
-          }
-        }
-
-        registerPhotoItem(c, s.name, null);
-      });
-    }
-
-    /***************************************************************************
-     * 6. AUTO BALANCE (ONE-CLICK INTELLIGENT HISTOGRAM NORMALIZATION)
-     ***************************************************************************/
-    function runAutoBalance() {
-      const photo = getActivePhoto();
-      if (!photo) return;
-
-      const pc = photo.proxyCanvas;
-      const data = pc.getContext('2d').getImageData(0, 0, pc.width, pc.height).data;
-      let sumLuma = 0;
-      let darkCount = 0;
-      let brightCount = 0;
-      const step = 16;
-      const samples = Math.floor(data.length / (4 * step));
-
-      for (let i = 0; i < data.length; i += 4 * step) {
-        const l = (0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]) / 255;
-        sumLuma += l;
-        if (l < 0.18) darkCount++;
-        if (l > 0.84) brightCount++;
-      }
-
-      const avgL = sumLuma / Math.max(1, samples);
-      const darkRatio = darkCount / Math.max(1, samples);
-      const brightRatio = brightCount / Math.max(1, samples);
-
-      photo.adjustments.exposure = Math.round(Math.max(-35, Math.min(35, (0.48 - avgL) * 75)));
-      photo.adjustments.contrast = 14;
-      photo.adjustments.highlights = Math.round(-Math.min(40, brightRatio * 140 + 12));
-      photo.adjustments.shadows = Math.round(Math.min(45, darkRatio * 110 + 14));
-      photo.adjustments.whites = 8;
-      photo.adjustments.blacks = -6;
-      photo.adjustments.vibrance = 16;
-      photo.adjustments.clarity = 10;
-
-      pushHistory(photo, 'Auto Balance');
-      syncAllUI();
-      requestRender();
-      showToast('Auto Balance applied');
-    }
-
-    /***************************************************************************
-     * 7. INTERACTIVE CROP & MASK CANVAS HANDLES (MOUSE + TOUCH)
-     ***************************************************************************/
-    let pointerJob = null;
-
-    function drawInteractiveStageOverlay() {
-      const overlay = document.getElementById('interactiveOverlayCanvas');
-      const ctx = overlay.getContext('2d');
-      const w = overlay.width;
-      const h = overlay.height;
-      ctx.clearRect(0, 0, w, h);
-
-      const photo = getActivePhoto();
-      if (!photo || state.isComparing) return;
-
-      if (state.mode === 'crop') {
-        const cb = photo.transform.cropBox;
-        const cx = cb.x * w, cy = cb.y * h, cw = cb.w * w, ch = cb.h * h;
-
-        // Dim outside crop frame
-        ctx.fillStyle = 'rgba(10, 10, 11, 0.74)';
-        ctx.fillRect(0, 0, w, cy);
-        ctx.fillRect(0, cy + ch, w, h - (cy + ch));
-        ctx.fillRect(0, cy, cx, ch);
-        ctx.fillRect(cx + cw, cy, w - (cx + cw), ch);
-
-        // Rule of thirds grid
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.28)';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(cx + cw / 3, cy); ctx.lineTo(cx + cw / 3, cy + ch);
-        ctx.moveTo(cx + (cw * 2) / 3, cy); ctx.lineTo(cx + (cw * 2) / 3, cy + ch);
-        ctx.moveTo(cx, cy + ch / 3); ctx.lineTo(cx + cw, cy + ch / 3);
-        ctx.moveTo(cx, cy + (ch * 2) / 3); ctx.lineTo(cx + cw, cy + (ch * 2) / 3);
-        ctx.stroke();
-
-        // Crisp orange border
-        ctx.strokeStyle = '#f97316';
-        ctx.lineWidth = 1.8;
-        ctx.strokeRect(cx, cy, cw, ch);
-
-        // Corner & edge handles
-        const hs = window.innerWidth <= 860 ? 12 : 9;
-        ctx.fillStyle = '#ffffff';
-        const pts = [
-          [cx, cy], [cx + cw / 2, cy], [cx + cw, cy],
-          [cx, cy + ch / 2], [cx + cw, cy + ch / 2],
-          [cx, cy + ch], [cx + cw / 2, cy + ch], [cx + cw, cy + ch]
-        ];
-        pts.forEach(([px, py]) => ctx.fillRect(px - hs / 2, py - hs / 2, hs, hs));
-        return;
-      }
-
-      if (state.mode === 'mask') {
-        const mask = getActiveMask(photo);
-        if (!mask || !mask.enabled) return;
-
-        if (mask.type === 'linear') {
-          const x1 = mask.x1 * w, y1 = mask.y1 * h;
-          const x2 = mask.x2 * w, y2 = mask.y2 * h;
-
-          ctx.strokeStyle = '#f97316';
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
-          ctx.stroke();
-
-          drawPin(ctx, x1, y1, 7, '#f97316');
-          drawPin(ctx, x2, y2, 7, '#ffffff');
-        } else if (mask.type === 'radial') {
-          const cx = mask.cx * w, cy = mask.cy * h;
-          const rx = mask.rx * w, ry = mask.ry * h;
-
-          ctx.strokeStyle = '#f97316';
-          ctx.lineWidth = 1.8;
-          ctx.beginPath();
-          ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
-          ctx.stroke();
-
-          drawPin(ctx, cx, cy, 7, '#f97316');
-          drawPin(ctx, cx + rx, cy, 6, '#ffffff');
-          drawPin(ctx, cx, cy + ry, 6, '#ffffff');
-        } else if (mask.type === 'brush' && state.brush.hovering) {
-          ctx.strokeStyle = state.brush.mode === 'erase' ? '#ef4444' : '#f97316';
-          ctx.lineWidth = 1.5;
-          ctx.beginPath();
-          ctx.arc(state.brush.x, state.brush.y, state.brush.size / 2, 0, Math.PI * 2);
-          ctx.stroke();
-        }
-      }
-    }
-
-    function drawPin(ctx, x, y, r, color) {
-      ctx.fillStyle = color;
-      ctx.strokeStyle = '#0a0a0b';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-    }
-
-    function setupCanvasPointerInteractions() {
-      const overlay = document.getElementById('interactiveOverlayCanvas');
-
-      overlay.addEventListener('pointerdown', (e) => {
-        const photo = getActivePhoto();
-        if (!photo) return;
-        overlay.setPointerCapture(e.pointerId);
-
-        const rect = overlay.getBoundingClientRect();
-        const px = e.clientX - rect.left;
-        const py = e.clientY - rect.top;
-        const nx = Math.max(0, Math.min(1, px / rect.width));
-        const ny = Math.max(0, Math.min(1, py / rect.height));
-
-        if (state.mode === 'crop') {
-          const hit = hitCropHandle(px, py, photo.transform.cropBox, rect.width, rect.height);
-          if (hit) {
-            pointerJob = {
-              kind: 'crop',
-              handle: hit,
-              startNx: nx,
-              startNy: ny,
-              origBox: { ...photo.transform.cropBox },
-              moved: false
-            };
-          }
-          return;
-        }
-
-        if (state.mode === 'mask') {
-          const mask = getActiveMask(photo);
-          if (!mask || !mask.enabled) return;
-          const tol = window.innerWidth <= 860 ? 26 : 18;
-
-          if (mask.type === 'linear') {
-            const d1 = Math.hypot(px - mask.x1 * rect.width, py - mask.y1 * rect.height);
-            const d2 = Math.hypot(px - mask.x2 * rect.width, py - mask.y2 * rect.height);
-            if (d1 < tol) pointerJob = { kind: 'lin_p1', moved: false };
-            else if (d2 < tol) pointerJob = { kind: 'lin_p2', moved: false };
-            else pointerJob = { kind: 'lin_move', startNx: nx, startNy: ny, ox1: mask.x1, oy1: mask.y1, ox2: mask.x2, oy2: mask.y2, moved: false };
-          } else if (mask.type === 'radial') {
-            const cx = mask.cx * rect.width, cy = mask.cy * rect.height;
-            const rx = mask.rx * rect.width, ry = mask.ry * rect.height;
-            if (Math.hypot(px - (cx + rx), py - cy) < tol) pointerJob = { kind: 'rad_rx', moved: false };
-            else if (Math.hypot(px - cx, py - (cy + ry)) < tol) pointerJob = { kind: 'rad_ry', moved: false };
-            else pointerJob = { kind: 'rad_move', startNx: nx, startNy: ny, ocx: mask.cx, ocy: mask.cy, moved: false };
-          } else if (mask.type === 'brush') {
-            pointerJob = { kind: 'brush', moved: true };
-            stampBrush(mask, nx, ny, rect.width);
-          }
-        }
-      });
-
-      overlay.addEventListener('pointermove', (e) => {
-        const photo = getActivePhoto();
-        if (!photo) return;
-        const rect = overlay.getBoundingClientRect();
-        if (!rect.width || !rect.height) return;
-
-        const px = e.clientX - rect.left;
-        const py = e.clientY - rect.top;
-        const nx = Math.max(0, Math.min(1, px / rect.width));
-        const ny = Math.max(0, Math.min(1, py / rect.height));
-
-        state.brush.hovering = px >= 0 && px <= rect.width && py >= 0 && py <= rect.height;
-        state.brush.x = px;
-        state.brush.y = py;
-
-        if (!pointerJob) {
-          if (state.mode === 'mask') drawInteractiveStageOverlay();
-          return;
-        }
-
-        pointerJob.moved = true;
-
-        if (pointerJob.kind === 'crop') {
-          dragCropBox(photo, nx, ny, rect.width, rect.height);
-          updateCropSizeLabel(photo);
-          drawInteractiveStageOverlay();
-        } else if (pointerJob.kind.startsWith('lin')) {
-          const mask = getActiveMask(photo);
-          if (!mask) return;
-          if (pointerJob.kind === 'lin_p1') { mask.x1 = nx; mask.y1 = ny; }
-          else if (pointerJob.kind === 'lin_p2') { mask.x2 = nx; mask.y2 = ny; }
-          else {
-            const dx = nx - pointerJob.startNx, dy = ny - pointerJob.startNy;
-            mask.x1 = Math.max(0, Math.min(1, pointerJob.ox1 + dx));
-            mask.y1 = Math.max(0, Math.min(1, pointerJob.oy1 + dy));
-            mask.x2 = Math.max(0, Math.min(1, pointerJob.ox2 + dx));
-            mask.y2 = Math.max(0, Math.min(1, pointerJob.oy2 + dy));
-          }
-          requestRender();
-        } else if (pointerJob.kind.startsWith('rad')) {
-          const mask = getActiveMask(photo);
-          if (!mask) return;
-          if (pointerJob.kind === 'rad_rx') mask.rx = Math.max(0.04, Math.min(0.95, Math.abs(nx - mask.cx)));
-          else if (pointerJob.kind === 'rad_ry') mask.ry = Math.max(0.04, Math.min(0.95, Math.abs(ny - mask.cy)));
-          else {
-            mask.cx = Math.max(0, Math.min(1, pointerJob.ocx + (nx - pointerJob.startNx)));
-            mask.cy = Math.max(0, Math.min(1, pointerJob.ocy + (ny - pointerJob.startNy)));
-          }
-          requestRender();
-        } else if (pointerJob.kind === 'brush') {
-          const mask = getActiveMask(photo);
-          if (mask && mask.type === 'brush') stampBrush(mask, nx, ny, rect.width);
-        }
-      });
-
-      const finishPointer = () => {
-        if (pointerJob && pointerJob.moved) {
-          const photo = getActivePhoto();
-          if (photo) {
-            if (pointerJob.kind === 'crop') pushHistory(photo, 'Adjusted Crop Frame');
-            else if (pointerJob.kind === 'brush') pushHistory(photo, 'Brush Stroke');
-            else pushHistory(photo, 'Moved Mask');
-          }
-        }
-        pointerJob = null;
-      };
-
-      overlay.addEventListener('pointerup', finishPointer);
-      overlay.addEventListener('pointercancel', finishPointer);
-    }
-
-    function hitCropHandle(px, py, cb, w, h) {
-      const cx = cb.x * w, cy = cb.y * h, cw = cb.w * w, ch = cb.h * h;
-      const tol = window.innerWidth <= 860 ? 24 : 14;
-      if (Math.hypot(px - cx, py - cy) < tol) return 'nw';
-      if (Math.hypot(px - (cx + cw), py - cy) < tol) return 'ne';
-      if (Math.hypot(px - cx, py - (cy + ch)) < tol) return 'sw';
-      if (Math.hypot(px - (cx + cw), py - (cy + ch)) < tol) return 'se';
-      if (Math.abs(py - cy) < tol && px > cx && px < cx + cw) return 'n';
-      if (Math.abs(py - (cy + ch)) < tol && px > cx && px < cx + cw) return 's';
-      if (Math.abs(px - cx) < tol && py > cy && py < cy + ch) return 'w';
-      if (Math.abs(px - (cx + cw)) < tol && py > cy && py < cy + ch) return 'e';
-      if (px >= cx && px <= cx + cw && py >= cy && py <= cy + ch) return 'move';
-      return null;
-    }
-
-    function dragCropBox(photo, nx, ny, stageW, stageH) {
-      const ob = pointerJob.origBox;
-      const dx = nx - pointerJob.startNx;
-      const dy = ny - pointerJob.startNy;
-      const minS = 0.08;
-      let { x, y, w, h } = ob;
-
-      if (pointerJob.handle === 'move') {
-        x = Math.max(0, Math.min(1 - w, ob.x + dx));
-        y = Math.max(0, Math.min(1 - h, ob.y + dy));
-        photo.transform.cropBox = { x, y, w, h };
-        return;
-      }
-
-      if (pointerJob.handle.includes('w')) {
-        x = Math.max(0, Math.min(ob.x + ob.w - minS, ob.x + dx));
-        w = ob.w + (ob.x - x);
-      }
-      if (pointerJob.handle.includes('e')) w = Math.max(minS, Math.min(1 - ob.x, ob.w + dx));
-      if (pointerJob.handle.includes('n')) {
-        y = Math.max(0, Math.min(ob.y + ob.h - minS, ob.y + dy));
-        h = ob.h + (ob.y - y);
-      }
-      if (pointerJob.handle.includes('s')) h = Math.max(minS, Math.min(1 - ob.y, ob.h + dy));
-
-      const targetRatio = resolveAspectRatio(photo);
-      if (targetRatio) {
-        const imgAspect = stageW / stageH;
-        const normR = targetRatio / imgAspect;
-        h = w / normR;
-        if (y + h > 1) { h = 1 - y; w = h * normR; }
-        if (x + w > 1) { w = 1 - x; h = w / normR; }
-      }
-
-      photo.transform.cropBox = { x, y, w, h };
-    }
-
-    function resolveAspectRatio(photo) {
-      const asp = photo.transform.aspect;
-      if (!asp || asp === 'free') return null;
-      if (asp === 'original') {
-        const rot90 = ((photo.transform.rot90 % 360) + 360) % 360;
-        const swap = rot90 === 90 || rot90 === 270;
-        return swap ? photo.origHeight / photo.origWidth : photo.origWidth / photo.origHeight;
-      }
-      const [aw, ah] = asp.split(':').map(Number);
-      return aw / ah;
-    }
-
-    function applyAspectRatioPreset(photo, aspectStr) {
-      photo.transform.aspect = aspectStr;
-      if (aspectStr === 'free') {
-        syncCropUI(photo);
-        drawInteractiveStageOverlay();
-        return;
-      }
-      const rot90 = ((photo.transform.rot90 % 360) + 360) % 360;
-      const swap = rot90 === 90 || rot90 === 270;
-      const imgW = swap ? photo.origHeight : photo.origWidth;
-      const imgH = swap ? photo.origWidth : photo.origHeight;
-      const imgRatio = imgW / imgH;
-      const r = resolveAspectRatio(photo);
-
-      let w = 1, h = 1;
-      if (r > imgRatio) { w = 1; h = imgRatio / r; }
-      else { h = 1; w = r / imgRatio; }
-
-      photo.transform.cropBox = { x: (1 - w) / 2, y: (1 - h) / 2, w, h };
-      pushHistory(photo, `Crop ${aspectStr}`);
-      syncCropUI(photo);
-      drawInteractiveStageOverlay();
-    }
-
-    function stampBrush(mask, nx, ny, dispW) {
-      const bc = mask.brushCanvas;
-      const bCtx = bc.getContext('2d');
-      const cx = nx * bc.width;
-      const cy = ny * bc.height;
-      const rad = ((state.brush.size / 2) / Math.max(150, dispW)) * bc.width;
-      const inner = rad * (1 - (state.brush.feather / 100) * 0.9);
-
-      bCtx.save();
-      bCtx.globalCompositeOperation = state.brush.mode === 'erase' ? 'destination-out' : 'source-over';
-      const g = bCtx.createRadialGradient(cx, cy, inner, cx, cy, Math.max(1, rad));
-      g.addColorStop(0, 'rgba(255,255,255,1)');
-      g.addColorStop(1, 'rgba(255,255,255,0)');
-      bCtx.fillStyle = g;
-      bCtx.beginPath();
-      bCtx.arc(cx, cy, rad, 0, Math.PI * 2);
-      bCtx.fill();
-      bCtx.restore();
-
-      requestRender();
-    }
-
-    /***************************************************************************
-     * 8. HISTORY STACK & NON-DESTRUCTIVE BACKTRACKING
-     ***************************************************************************/
-    function snapshotPhoto(photo) {
-      return {
-        adjustments: { ...photo.adjustments },
-        transform: { ...photo.transform, cropBox: { ...photo.transform.cropBox } },
-        masks: photo.masks.map(m => {
-          const item = { id: m.id, type: m.type, name: m.name, enabled: m.enabled, invert: m.invert, grade: { ...m.grade } };
-          if (m.type === 'linear') { item.x1 = m.x1; item.y1 = m.y1; item.x2 = m.x2; item.y2 = m.y2; }
-          else if (m.type === 'radial') { item.cx = m.cx; item.cy = m.cy; item.rx = m.rx; item.ry = m.ry; item.feather = m.feather; }
-          else if (m.type === 'brush' && m.brushCanvas) item.dataUrl = m.brushCanvas.toDataURL();
-          return item;
-        })
-      };
-    }
-
-    function restorePhotoSnapshot(photo, snap, cb) {
-      photo.adjustments = { ...snap.adjustments };
-      photo.transform = { ...snap.transform, cropBox: { ...snap.transform.cropBox } };
-      let pending = 0;
-
-      photo.masks = snap.masks.map(m => {
-        const copy = { id: m.id, type: m.type, name: m.name, enabled: m.enabled, invert: m.invert, grade: { ...m.grade } };
-        if (m.type === 'linear') { copy.x1 = m.x1; copy.y1 = m.y1; copy.x2 = m.x2; copy.y2 = m.y2; }
-        else if (m.type === 'radial') { copy.cx = m.cx; copy.cy = m.cy; copy.rx = m.rx; copy.ry = m.ry; copy.feather = m.feather; }
-        else if (m.type === 'brush') {
-          const bc = document.createElement('canvas');
-          bc.width = 512; bc.height = 512;
-          copy.brushCanvas = bc;
-          if (m.dataUrl) {
-            pending++;
-            const img = new Image();
-            img.onload = () => {
-              bc.getContext('2d').drawImage(img, 0, 0);
-              pending--;
-              if (pending === 0 && cb) cb();
-            };
-            img.src = m.dataUrl;
-          }
-        }
-        return copy;
-      });
-
-      geomCache.signature = '';
-      if (pending === 0 && cb) cb();
-    }
-
-    function pushHistory(photo, label) {
-      if (!photo) return;
-      if (photo.historyIdx < photo.history.length - 1) {
-        photo.history = photo.history.slice(0, photo.historyIdx + 1);
-      }
-      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      photo.history.push({ label, time, snap: snapshotPhoto(photo) });
-      if (photo.history.length > 35) photo.history.shift();
-      photo.historyIdx = photo.history.length - 1;
-
-      renderHistoryStack();
-      updateModifiedBadges();
-    }
-
-    function jumpHistory(photo, idx) {
-      if (!photo || idx < 0 || idx >= photo.history.length) return;
-      photo.historyIdx = idx;
-      restorePhotoSnapshot(photo, photo.history[idx].snap, () => {
-        syncAllUI();
-        renderHistoryStack();
-        updateModifiedBadges();
-        requestRender();
-      });
-    }
-
-    function renderHistoryStack() {
-      const photo = getActivePhoto();
-      const mount = document.getElementById('historyListMount');
-      const undoBtn = document.getElementById('undoBtn');
-      const redoBtn = document.getElementById('redoBtn');
-
-      if (!photo) {
-        mount.innerHTML = '';
-        undoBtn.disabled = true;
-        redoBtn.disabled = true;
-        return;
-      }
-
-      undoBtn.disabled = photo.historyIdx <= 0;
-      redoBtn.disabled = photo.historyIdx >= photo.history.length - 1;
-
-      mount.innerHTML = '';
-      photo.history.forEach((h, i) => {
-        const active = i === photo.historyIdx;
-        const btn = document.createElement('button');
-        btn.className = `w-full text-left px-2.5 py-1.5 rounded-[3px] text-xs flex items-center justify-between ${
-          active ? 'bg-[#f97316]/15 text-[#f97316] border border-[#f97316]/40 font-semibold' : 'text-zinc-300 hover:bg-[#1a1a1e]'
-        }`;
-        btn.innerHTML = `<span class="truncate pr-2">${h.label}</span><span class="tabular-nums text-[10px] text-zinc-500">${h.time}</span>`;
-        btn.addEventListener('click', () => jumpHistory(photo, i));
-        mount.appendChild(btn);
-      });
-      mount.scrollTop = mount.scrollHeight;
-    }
-
-    /***************************************************************************
-     * 9. UI SLIDER MOUNTING & STATE SYNC
-     ***************************************************************************/
-    function buildSliderSection(mountId, list, isMask) {
-      const mount = document.getElementById(mountId);
-      mount.innerHTML = '';
-      const pfx = isMask ? 'm' : 'g';
-
-      list.forEach(def => {
-        const isBi = def.min < 0;
-        const row = document.createElement('div');
-        row.className = 'pt-slider-row';
-
-        const header = document.createElement('div');
-        header.className = 'flex items-center justify-between text-xs mb-0.5';
-
-        const label = document.createElement('span');
-        label.className = 'text-zinc-300 hover:text-white cursor-pointer text-[11px] font-medium';
-        label.textContent = def.label;
-        label.title = 'Double-click to reset';
-
-        const right = document.createElement('div');
-        right.className = 'flex items-center gap-1.5';
-
-        const valSpan = document.createElement('span');
-        valSpan.id = `${pfx}_val_${def.key}`;
-        valSpan.className = 'tabular-nums text-[11px] text-zinc-400';
-        valSpan.textContent = def.def;
-
-        const dotBtn = document.createElement('button');
-        dotBtn.id = `${pfx}_dot_${def.key}`;
-        dotBtn.className = 'hidden w-3.5 h-3.5 rounded-full bg-[#f97316]/20 hover:bg-[#f97316]/40 items-center justify-center';
-        dotBtn.title = `Reset ${def.label}`;
-        dotBtn.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-[#f97316]"></span>`;
-
-        right.appendChild(valSpan);
-        right.appendChild(dotBtn);
-        header.appendChild(label);
-        header.appendChild(right);
-
-        const trackWrap = document.createElement('div');
-        trackWrap.className = 'pt-slider-track-container';
-
-        const rail = document.createElement('div');
-        rail.className = `pt-slider-rail ${def.rail || ''}`;
-
-        const fill = document.createElement('div');
-        fill.id = `${pfx}_fill_${def.key}`;
-        fill.className = 'pt-slider-fill';
-        if (def.rail) fill.style.opacity = '0.35';
-
-        rail.appendChild(fill);
-        trackWrap.appendChild(rail);
-
-        if (isBi) {
-          const tick = document.createElement('div');
-          tick.className = 'pt-slider-center-tick';
-          trackWrap.appendChild(tick);
-        }
-
-        const input = document.createElement('input');
-        input.type = 'range';
-        input.min = def.min;
-        input.max = def.max;
-        input.value = def.def;
-        input.id = `${pfx}_input_${def.key}`;
-        input.className = 'pt-range';
-
-        input.addEventListener('input', () => {
-          onSliderUpdate(def, parseInt(input.value, 10), isMask, false);
-        });
-        input.addEventListener('change', () => {
-          onSliderUpdate(def, parseInt(input.value, 10), isMask, true);
-        });
-
-        const resetOne = () => {
-          if (parseInt(input.value, 10) === def.def) return;
-          input.value = def.def;
-          onSliderUpdate(def, def.def, isMask, true);
-        };
-        row.addEventListener('dblclick', resetOne);
-        dotBtn.addEventListener('click', resetOne);
-
-        trackWrap.appendChild(input);
-        row.appendChild(header);
-        row.appendChild(trackWrap);
-        mount.appendChild(row);
-      });
-    }
-
-    function setSliderVisual(pfx, def, val) {
-      const valEl = document.getElementById(`${pfx}_val_${def.key}`);
-      const dotEl = document.getElementById(`${pfx}_dot_${def.key}`);
-      const fillEl = document.getElementById(`${pfx}_fill_${def.key}`);
-      const inpEl = document.getElementById(`${pfx}_input_${def.key}`);
-
-      if (inpEl) inpEl.value = val;
-      const mod = val !== def.def;
-
-      if (valEl) {
-        valEl.textContent = val > 0 && def.min < 0 ? `+${val}` : `${val}`;
-        valEl.className = `tabular-nums text-[11px] ${mod ? 'text-white font-semibold' : 'text-zinc-400'}`;
-      }
-      if (dotEl) {
-        dotEl.classList.toggle('hidden', !mod);
-        dotEl.classList.toggle('flex', mod);
-      }
-      if (fillEl) {
-        if (def.min < 0) {
-          const pct = ((val - def.min) / (def.max - def.min)) * 100;
-          fillEl.style.left = `${Math.min(50, pct)}%`;
-          fillEl.style.width = `${Math.abs(pct - 50)}%`;
-        } else {
-          const pct = ((val - def.min) / (def.max - def.min)) * 100;
-          fillEl.style.left = '0%';
-          fillEl.style.width = `${pct}%`;
-        }
-      }
-    }
-
-    function onSliderUpdate(def, val, isMask, commit) {
-      const photo = getActivePhoto();
-      if (!photo) return;
-      const pfx = isMask ? 'm' : 'g';
-      setSliderVisual(pfx, def, val);
-
-      if (isMask) {
-        const mask = getActiveMask(photo);
-        if (!mask) return;
-        mask.grade[def.key] = val;
-        if (commit) pushHistory(photo, `Mask ${def.label}: ${val}`);
-      } else {
-        photo.adjustments[def.key] = val;
-        refreshGroupDots(photo);
-        if (commit) pushHistory(photo, `${def.label}: ${val}`);
-      }
-
-      requestRender();
-      updateModifiedBadges();
-    }
-
-    function refreshGroupDots(photo) {
-      ['light', 'color', 'finish'].forEach(grp => {
-        const mod = SLIDERS[grp].some(d => photo.adjustments[d.key] !== d.def);
-        const dot = document.getElementById(`groupDot_${grp}`);
-        if (dot) dot.classList.toggle('hidden', !mod);
-      });
-    }
-
-    function hasPhotoEdits(photo) {
-      const a = photo.adjustments;
-      const t = photo.transform;
-      return Object.values(a).some(v => v !== 0) ||
-             t.rot90 !== 0 || Math.abs(t.straighten) > 0.05 || t.flipH || t.flipV ||
-             t.cropBox.x > 0.005 || t.cropBox.y > 0.005 || t.cropBox.w < 0.995 || t.cropBox.h < 0.995 ||
-             photo.masks.length > 0;
-    }
-
-    function renderFilmstrips() {
-      const deskList = document.getElementById('desktopFilmstripList');
-      const mobList = document.getElementById('mobileFilmstripList');
-      deskList.innerHTML = '';
-      mobList.innerHTML = '';
-
-      const total = state.photos.length;
-      const checkedCount = state.photos.filter(p => p.checked).length;
-
-      document.getElementById('headerPhotoCountPill').textContent = `${total} ${total === 1 ? 'photo' : 'photos'}`;
-      document.getElementById('expAllCount').textContent = total;
-      document.getElementById('expCheckedCount').textContent = checkedCount;
-
-      document.getElementById('emptyDropzone').classList.toggle('hidden', total > 0);
-      document.getElementById('emptyDropzone').classList.toggle('flex', total === 0);
-      document.getElementById('canvasMountWrap').classList.toggle('hidden', total === 0);
-
-      state.photos.forEach((photo, idx) => {
-        const active = photo.id === state.activePhotoId;
-        const mod = hasPhotoEdits(photo);
-
-        // Desktop vertical queue card
-        const dCard = document.createElement('div');
-        dCard.className = `rounded-[3px] overflow-hidden border bg-[#0a0a0b] relative cursor-pointer transition-colors ${
-          active ? 'border-[#f97316] ring-1 ring-[#f97316]' : 'border-[#26262b] hover:border-zinc-500'
-        }`;
-        dCard.innerHTML = `
-          <div class="relative h-24 w-full">
-            <img src="${photo.thumbUrl}" class="w-full h-full object-cover" />
-            <label class="absolute top-1.5 left-1.5 w-4 h-4 rounded-[2px] bg-black/80 border border-zinc-600 flex items-center justify-center cursor-pointer z-10">
-              <input type="checkbox" ${photo.checked ? 'checked' : ''} class="accent-[#f97316] w-3 h-3 cursor-pointer" />
-            </label>
-            <span id="dmod_${photo.id}" class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#f97316] ${mod ? 'block' : 'hidden'}"></span>
-          </div>
-          <div class="px-2 py-1 bg-[#121214] flex items-center justify-between text-[10px]">
-            <span class="tabular-nums text-zinc-500">${String(idx + 1).padStart(2, '0')}</span>
-            <span class="truncate text-zinc-300 max-w-[125px]">${photo.baseName}</span>
-          </div>
-        `;
-        const chk = dCard.querySelector('input[type="checkbox"]');
-        chk.addEventListener('click', e => e.stopPropagation());
-        chk.addEventListener('change', () => {
-          photo.checked = chk.checked;
-          document.getElementById('expCheckedCount').textContent = state.photos.filter(p => p.checked).length;
-        });
-        dCard.addEventListener('click', () => selectPhoto(photo.id));
-        deskList.appendChild(dCard);
-
-        // Mobile horizontal thumb card
-        const mCard = document.createElement('div');
-        mCard.className = `h-full w-16 shrink-0 rounded-[3px] overflow-hidden border relative cursor-pointer ${
-          active ? 'border-[#f97316]' : 'border-[#26262b]'
-        }`;
-        mCard.innerHTML = `
-          <img src="${photo.thumbUrl}" class="w-full h-full object-cover" />
-          <span id="mmod_${photo.id}" class="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-[#f97316] ${mod ? 'block' : 'hidden'}"></span>
-        `;
-        mCard.addEventListener('click', () => selectPhoto(photo.id));
-        mobList.appendChild(mCard);
-      });
-    }
-
-    function updateModifiedBadges() {
-      state.photos.forEach(p => {
-        const mod = hasPhotoEdits(p);
-        const d = document.getElementById(`dmod_${p.id}`);
-        const m = document.getElementById(`mmod_${p.id}`);
-        if (d) d.className = `absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#f97316] ${mod ? 'block' : 'hidden'}`;
-        if (m) m.className = `absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-[#f97316] ${mod ? 'block' : 'hidden'}`;
-      });
-    }
-
-    function selectPhoto(id) {
-      state.activePhotoId = id;
-      renderFilmstrips();
-      syncAllUI();
-      requestRender();
-    }
-
-    function syncAllUI() {
-      const photo = getActivePhoto();
-      document.getElementById('statusFileName').textContent = photo ? photo.name : 'No photo';
-      document.getElementById('statusResolution').textContent = photo ? `${photo.origWidth} × ${photo.origHeight}` : '';
-
-      if (!photo) return;
-
-      [...SLIDERS.light, ...SLIDERS.color, ...SLIDERS.finish].forEach(def => {
-        setSliderVisual('g', def, photo.adjustments[def.key] || 0);
-      });
-
-      refreshGroupDots(photo);
-      syncCropUI(photo);
-      renderMasksUI();
-      renderHistoryStack();
-    }
-
-    function syncCropUI(photo) {
-      const st = photo.transform.straighten;
-      document.getElementById('straightenInput').value = st;
-      document.getElementById('straightenReadout').textContent = `${st.toFixed(1)}°`;
-      document.getElementById('autoScaleCropCheck').checked = photo.transform.autoScale;
-
-      const dot = document.getElementById('resetAngleDotBtn');
-      const mod = Math.abs(st) > 0.05;
-      dot.classList.toggle('hidden', !mod);
-      dot.classList.toggle('flex', mod);
-
-      const pct = ((st + 45) / 90) * 100;
-      const fill = document.getElementById('straightenFill');
-      fill.style.left = `${Math.min(50, pct)}%`;
-      fill.style.width = `${Math.abs(pct - 50)}%`;
-
-      document.querySelectorAll('#aspectPresetsGrid button').forEach(btn => {
-        btn.classList.toggle('pt-btn-active', btn.dataset.aspect === photo.transform.aspect);
-      });
-
-      updateCropSizeLabel(photo);
-    }
-
-    function updateCropSizeLabel(photo) {
-      const cb = photo.transform.cropBox;
-      const rot90 = ((photo.transform.rot90 % 360) + 360) % 360;
-      const swap = rot90 === 90 || rot90 === 270;
-      const w = Math.round((swap ? photo.origHeight : photo.origWidth) * cb.w);
-      const h = Math.round((swap ? photo.origWidth : photo.origHeight) * cb.h);
-      document.getElementById('cropDimensionsLabel').textContent = `${w} × ${h}`;
-    }
-
-    function addMaskLayer(type) {
-      const photo = getActivePhoto();
-      if (!photo) return;
-      const idx = photo.masks.length + 1;
-      const title = type === 'linear' ? 'Linear' : type === 'radial' ? 'Radial' : 'Brush';
-      const mask = {
-        id: 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5),
-        type,
-        name: `${title} ${idx}`,
-        enabled: true,
-        invert: false,
-        grade: defaultMaskGrade()
-      };
-      mask.grade.exposure = -25;
-
-      if (type === 'linear') {
-        mask.x1 = 0.5; mask.y1 = 0.12; mask.x2 = 0.5; mask.y2 = 0.62;
-      } else if (type === 'radial') {
-        mask.cx = 0.5; mask.cy = 0.5; mask.rx = 0.32; mask.ry = 0.32; mask.feather = 0.55;
-      } else {
-        const bc = document.createElement('canvas');
-        bc.width = 512; bc.height = 512;
-        mask.brushCanvas = bc;
-      }
-
-      photo.masks.push(mask);
-      state.activeMaskId = mask.id;
-      pushHistory(photo, `Added ${mask.name}`);
-      renderMasksUI();
-      requestRender();
-    }
-
-    function renderMasksUI() {
-      const photo = getActivePhoto();
-      const listEl = document.getElementById('maskListContainer');
-      const badge = document.getElementById('headerMaskBadge');
-      const editor = document.getElementById('activeMaskEditor');
-
-      if (!photo || !photo.masks.length) {
-        listEl.innerHTML = `<div class="text-[11px] text-zinc-500 py-3 text-center border border-dashed border-[#26262b] rounded-[3px]">No masks added</div>`;
-        badge.classList.add('hidden');
-        editor.classList.add('hidden');
-        return;
-      }
-
-      badge.textContent = photo.masks.length;
-      badge.classList.remove('hidden');
-
-      if (!photo.masks.some(m => m.id === state.activeMaskId)) {
-        state.activeMaskId = photo.masks[photo.masks.length - 1].id;
-      }
-
-      listEl.innerHTML = '';
-      photo.masks.forEach(mask => {
-        const act = mask.id === state.activeMaskId;
-        const item = document.createElement('div');
-        item.className = `px-2.5 py-1.5 rounded-[3px] border text-xs flex items-center justify-between cursor-pointer ${
-          act ? 'bg-[#f97316]/15 border-[#f97316] text-white font-semibold' : 'bg-[#1a1a1e] border-[#26262b] text-zinc-300'
-        }`;
-        item.innerHTML = `
-          <span class="truncate">${mask.name}</span>
-          <div class="flex items-center gap-1">
-            <button data-act="toggle" class="w-5 h-5 flex items-center justify-center text-zinc-400 hover:text-white">
-              <i class="ph ${mask.enabled ? 'ph-eye' : 'ph-eye-slash text-[#f97316]'}"></i>
-            </button>
-            <button data-act="del" class="w-5 h-5 flex items-center justify-center text-zinc-400 hover:text-red-400">
-              <i class="ph ph-trash"></i>
-            </button>
-          </div>
-        `;
-        item.querySelector('[data-act="toggle"]').addEventListener('click', (e) => {
-          e.stopPropagation();
-          mask.enabled = !mask.enabled;
-          renderMasksUI();
-          requestRender();
-        });
-        item.querySelector('[data-act="del"]').addEventListener('click', (e) => {
-          e.stopPropagation();
-          photo.masks = photo.masks.filter(m => m.id !== mask.id);
-          pushHistory(photo, `Removed ${mask.name}`);
-          renderMasksUI();
-          requestRender();
-        });
-        item.addEventListener('click', () => {
-          state.activeMaskId = mask.id;
-          renderMasksUI();
-          requestRender();
-        });
-        listEl.appendChild(item);
-      });
-
-      const activeMask = getActiveMask(photo);
-      if (!activeMask) return;
-
-      editor.classList.remove('hidden');
-      document.getElementById('activeMaskLabel').textContent = activeMask.name;
-      document.getElementById('invertMaskCheck').checked = activeMask.invert;
-      document.getElementById('brushSettingsBox').classList.toggle('hidden', activeMask.type !== 'brush');
-
-      SLIDERS.mask.forEach(def => {
-        setSliderVisual('m', def, activeMask.grade[def.key] || 0);
-      });
-    }
-
-    function renderPresetsList() {
-      const mount = document.getElementById('presetsListMount');
-      mount.innerHTML = '';
-
-      const all = [
-        ...BUILTIN_PRESETS.map(p => ({ ...p, custom: false })),
-        ...state.customPresets.map((p, idx) => ({ ...p, tag: 'Saved', custom: true, idx }))
-      ];
-
-      all.forEach(p => {
-        const btn = document.createElement('div');
-        btn.className = 'pt-btn py-2 px-2.5 text-xs flex items-center justify-between cursor-pointer';
-        btn.innerHTML = `
-          <span class="font-semibold text-zinc-100">${p.name}</span>
-          <div class="flex items-center gap-1.5">
-            <span class="text-[10px] text-zinc-400 bg-[#121214] px-1.5 py-0.5 rounded-[2px] border border-[#26262b]">${p.tag}</span>
-            ${p.custom ? `<button data-del="${p.idx}" class="text-zinc-500 hover:text-red-400"><i class="ph ph-trash"></i></button>` : ''}
-          </div>
-        `;
-        const del = btn.querySelector('[data-del]');
-        if (del) {
-          del.addEventListener('click', (e) => {
-            e.stopPropagation();
-            state.customPresets.splice(p.idx, 1);
-            try { localStorage.setItem('picture_this_custom_presets_v1', JSON.stringify(state.customPresets)); } catch (_) {}
-            renderPresetsList();
-          });
-        }
-        btn.addEventListener('click', () => {
-          const photo = getActivePhoto();
-          if (!photo) return;
-          Object.assign(photo.adjustments, p.values);
-          pushHistory(photo, `Preset: ${p.name}`);
-          syncAllUI();
-          requestRender();
-          showToast(`Applied ${p.name}`);
-        });
-        mount.appendChild(btn);
-      });
-    }
-
-    /***************************************************************************
-     * 10. SEQUENTIAL LOW-RAM BULK EXPORT ENGINE
-     ***************************************************************************/
-    async function renderSinglePhotoFullResBlob(photo) {
-      let fullSource = photo.sampleCanvas;
-      let bitmapToClose = null;
-
-      if (photo.rawFile) {
-        if ('createImageBitmap' in window) {
-          bitmapToClose = await createImageBitmap(photo.rawFile);
-          fullSource = bitmapToClose;
-        } else {
-          fullSource = await loadImgElement(photo.rawFile);
-        }
-      }
-
-      const maxDim = state.exportOpts.maxDim === 'custom'
-        ? parseInt(document.getElementById('customMaxPxInput').value, 10) || 0
-        : state.exportOpts.maxDim;
-
-      const tempGeom = document.createElement('canvas');
-      buildGeometryCanvas(fullSource, photo.transform, true, maxDim, tempGeom);
-
-      if (bitmapToClose && bitmapToClose.close) bitmapToClose.close();
-
-      const glCanvas = document.getElementById('glPhotoCanvas');
-      renderPhotoWithWebGL(photo, tempGeom, glCanvas, false);
-
-      return new Promise(resolve => {
-        glCanvas.toBlob(blob => resolve(blob), state.exportOpts.mime, state.exportOpts.quality);
-      });
-    }
-
-    async function runBulkExport(asZip) {
-      const active = getActivePhoto();
-      if (!active || !state.photos.length) return;
-
-      let list = state.photos;
-      if (state.exportOpts.scope === 'single') list = [active];
-      else if (state.exportOpts.scope === 'checked') list = state.photos.filter(p => p.checked);
-
-      if (!list.length) {
-        showToast('No photos selected');
-        return;
-      }
-
-      const ext = state.exportOpts.mime === 'image/webp' ? 'webp' : state.exportOpts.mime === 'image/png' ? 'png' : 'jpg';
-      const prefix = document.getElementById('expPrefixInput').value.trim();
-      const suffix = document.getElementById('expSuffixInput').value.trim();
-
-      const progWrap = document.getElementById('expProgressWrap');
-      const progBar = document.getElementById('expProgressBar');
-      const progText = document.getElementById('expProgressText');
-      const progCount = document.getElementById('expProgressCounter');
-      const zipBtn = document.getElementById('downloadZipBtn');
-      const indBtn = document.getElementById('downloadIndividualBtn');
-
-      progWrap.classList.remove('hidden');
-      zipBtn.disabled = true;
-      indBtn.disabled = true;
-
-      const zip = asZip && list.length > 1 ? new JSZip() : null;
-
-      for (let i = 0; i < list.length; i++) {
-        const p = list[i];
-        progText.textContent = `Processing ${p.name}...`;
-        progCount.textContent = `${i + 1} / ${list.length}`;
-        progBar.style.width = `${Math.round(((i + 0.3) / list.length) * 100)}%`;
-
-        // Yield to UI thread so MacBook browser stays responsive
-        await new Promise(r => setTimeout(r, 25));
-
-        const blob = await renderSinglePhotoFullResBlob(p);
-        const filename = `${prefix}${p.baseName}${suffix}.${ext}`;
-
-        if (zip) {
-          zip.file(filename, blob);
-        } else {
-          triggerDownload(blob, filename);
-        }
-        progBar.style.width = `${Math.round(((i + 1) / list.length) * 100)}%`;
-      }
-
-      if (zip) {
-        progText.textContent = 'Building .ZIP archive...';
-        const zipBlob = await zip.generateAsync({ type: 'blob' });
-        triggerDownload(zipBlob, `Picture_This_${list.length}_Photos_${ext.toUpperCase()}.zip`);
-      }
-
-      // Restore current photo preview on stage
-      geomCache.signature = '';
-      requestRender();
-
-      setTimeout(() => {
-        progWrap.classList.add('hidden');
-        zipBtn.disabled = false;
-        indBtn.disabled = false;
-        document.getElementById('exportModalBackdrop').classList.add('hidden');
-        document.getElementById('exportModalBackdrop').classList.remove('flex');
-        showToast(`Exported ${list.length} ${list.length === 1 ? 'photo' : 'photos'}`);
-      }, 300);
-    }
-
-    function triggerDownload(blob, filename) {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 4000);
-    }
-
-    /***************************************************************************
-     * 11. MODE SWITCHING, SHORTCUTS & EVENT BINDINGS
-     ***************************************************************************/
-    function setStudioMode(modeName) {
-      state.mode = modeName;
-      geomCache.signature = '';
-
-      document.querySelectorAll('.mode-tab-btn').forEach(btn => {
-        const act = btn.dataset.modeBtn === modeName;
-        btn.className = act
-          ? 'mode-tab-btn px-3 py-1 rounded-[3px] text-xs font-semibold flex items-center gap-1.5 bg-[#1a1a1e] text-[#f97316]'
-          : 'mode-tab-btn px-3 py-1 rounded-[3px] text-xs font-semibold flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200';
-      });
-
-      ['edit', 'crop', 'mask', 'presets'].forEach(m => {
-        document.getElementById(`panelMode_${m}`).classList.toggle('hidden', m !== modeName);
-      });
-
-      if (window.innerWidth > 860) {
-        ['light', 'color', 'finish'].forEach(g => {
-          document.getElementById(`editGroup_${g}`).classList.remove('hidden');
-        });
-      }
-
-      requestRender();
-    }
-
-    function setMobileTab(tab) {
-      state.mobileTab = tab;
-      document.querySelectorAll('.mob-tab-btn').forEach(btn => {
-        const act = btn.dataset.mobileTab === tab;
-        btn.className = act
-          ? 'mob-tab-btn px-2.5 py-1 rounded-[3px] text-[11px] font-semibold shrink-0 bg-[#1a1a1e] text-[#f97316]'
-          : 'mob-tab-btn px-2.5 py-1 rounded-[3px] text-[11px] font-semibold shrink-0 text-zinc-400';
-      });
-
-      if (tab === 'light' || tab === 'color' || tab === 'finish') {
-        setStudioMode('edit');
-        ['light', 'color', 'finish'].forEach(g => {
-          document.getElementById(`editGroup_${g}`).classList.toggle('hidden', g !== tab);
-        });
-      } else {
-        setStudioMode(tab);
-      }
-    }
-
-    function getActivePhoto() {
-      return state.photos.find(p => p.id === state.activePhotoId) || null;
-    }
-
-    function getActiveMask(photo) {
-      if (!photo || !state.activeMaskId) return null;
-      return photo.masks.find(m => m.id === state.activeMaskId) || null;
-    }
-
-    function showToast(text) {
-      const el = document.getElementById('ptToast');
-      document.getElementById('ptToastText').textContent = text;
-      el.classList.remove('hidden');
-      el.classList.add('flex');
-      clearTimeout(el._timer);
-      el._timer = setTimeout(() => {
-        el.classList.add('hidden');
-        el.classList.remove('flex');
-      }, 2000);
-    }
-
-    function copyCurrentEdits() {
-      const p = getActivePhoto();
-      if (!p) return;
-      state.clipboard = snapshotPhoto(p);
-      document.getElementById('headerPasteBtn').disabled = false;
-      document.getElementById('mobilePasteBtn').disabled = false;
-      showToast('Copied edits');
-    }
-
-    function pasteCurrentEdits() {
-      const p = getActivePhoto();
-      if (!p || !state.clipboard) return;
-      restorePhotoSnapshot(p, state.clipboard, () => {
-        pushHistory(p, 'Pasted Edits');
-        syncAllUI();
-        requestRender();
-        showToast('Pasted edits');
-      });
-    }
-
-    function syncAllEdits() {
-      const src = getActivePhoto();
-      if (!src) return;
-      const snap = snapshotPhoto(src);
-      let count = 0;
-      state.photos.forEach(p => {
-        if (p.id !== src.id && p.checked) {
-          restorePhotoSnapshot(p, snap);
-          pushHistory(p, `Synced from ${src.baseName}`);
-          count++;
-        }
-      });
-      updateModifiedBadges();
-      showToast(`Synced edits to ${count} photos`);
-    }
-
-    function initApp() {
-      initWebGLEngine();
-      buildSliderSection('mountSliders_light', SLIDERS.light, false);
-      buildSliderSection('mountSliders_color', SLIDERS.color, false);
-      buildSliderSection('mountSliders_finish', SLIDERS.finish, false);
-      buildSliderSection('mountSliders_mask', SLIDERS.mask, true);
-
-      renderPresetsList();
-      setupCanvasPointerInteractions();
-      bindEvents();
-      loadSamplePhotographs();
-
-      if (window.innerWidth <= 860) {
-        setMobileTab('light');
-      }
-
-      window.addEventListener('resize', () => {
-        fitCanvasInStage();
-        drawInteractiveStageOverlay();
-      });
-    }
-
-    function bindEvents() {
-      // File Upload & Drag-and-Drop
-      document.getElementById('fileInput').addEventListener('change', (e) => {
-        importFileList(e.target.files);
-        e.target.value = '';
-      });
-      window.addEventListener('dragover', e => e.preventDefault());
-      window.addEventListener('drop', e => {
-        e.preventDefault();
-        if (e.dataTransfer && e.dataTransfer.files) importFileList(e.dataTransfer.files);
-      });
-
-      document.getElementById('loadSamplesBtn').addEventListener('click', loadSamplePhotographs);
-      document.getElementById('emptyLoadSamplesBtn').addEventListener('click', loadSamplePhotographs);
-
-      // Mode Switcher Buttons
-      document.querySelectorAll('.mode-tab-btn').forEach(btn => {
-        btn.addEventListener('click', () => setStudioMode(btn.dataset.modeBtn));
-      });
-      document.querySelectorAll('.mob-tab-btn').forEach(btn => {
-        btn.addEventListener('click', () => setMobileTab(btn.dataset.mobileTab));
-      });
-
-      // Collapsible Left & Right Panels
-      document.getElementById('toggleLeftQueueBtn').addEventListener('click', () => {
-        state.leftOpen = !state.leftOpen;
-        document.getElementById('leftQueueDrawer').classList.toggle('collapsed', !state.leftOpen);
-        setTimeout(() => { fitCanvasInStage(); drawInteractiveStageOverlay(); }, 170);
-      });
-
-      document.getElementById('toggleRightInspectorBtn').addEventListener('click', () => {
-        state.rightOpen = !state.rightOpen;
-        document.getElementById('rightInspectorDrawer').classList.toggle('collapsed', !state.rightOpen);
-        document.getElementById('rightCollapseIcon').className = `ph ${state.rightOpen ? 'ph-caret-right' : 'ph-caret-left'} text-sm`;
-        setTimeout(() => { fitCanvasInStage(); drawInteractiveStageOverlay(); }, 170);
-      });
-
-      document.getElementById('mobileToggleStripBtn').addEventListener('click', () => {
-        state.mobileStripOpen = !state.mobileStripOpen;
-        document.getElementById('mobileFilmstripList').classList.toggle('hidden', !state.mobileStripOpen);
-        document.getElementById('mobileStripCaret').className = `ph ${state.mobileStripOpen ? 'ph-caret-down' : 'ph-caret-up'} text-xs text-[#f97316]`;
-        fitCanvasInStage();
-        drawInteractiveStageOverlay();
-      });
-
-      // Accordion Headers, Bypass & Group Reset
-      document.querySelectorAll('[data-accordion]').forEach(hdr => {
-        hdr.addEventListener('click', (e) => {
-          if (e.target.closest('button')) return;
-          const id = hdr.dataset.accordion;
-          const body = document.getElementById(id);
-          const caret = document.getElementById(`caret_${id}`);
-          const hidden = body.classList.toggle('hidden');
-          if (caret) caret.className = `ph ${hidden ? 'ph-caret-right' : 'ph-caret-down'} text-xs text-zinc-500 ml-0.5`;
-        });
-      });
-
-      document.querySelectorAll('[data-bypass]').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const grp = btn.dataset.bypass;
-          state.bypass[grp] = !state.bypass[grp];
-          btn.innerHTML = `<i class="ph ${state.bypass[grp] ? 'ph-eye-slash text-[#f97316]' : 'ph-eye'} text-xs"></i>`;
-          requestRender();
-        });
-      });
-
-      document.querySelectorAll('[data-reset-group]').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const photo = getActivePhoto();
-          if (!photo) return;
-          const grp = btn.dataset.resetGroup;
-          SLIDERS[grp].forEach(d => photo.adjustments[d.key] = d.def);
-          pushHistory(photo, `Reset ${grp}`);
-          syncAllUI();
-          requestRender();
-        });
-      });
-
-      // Auto Balance & Reset Photo
-      document.getElementById('autoBalanceBtn').addEventListener('click', runAutoBalance);
-      const resetAllPhoto = () => {
-        const p = getActivePhoto();
-        if (!p) return;
-        p.adjustments = defaultAdjustments();
-        p.transform = defaultTransform();
-        p.masks = [];
-        geomCache.signature = '';
-        pushHistory(p, 'Reset All');
-        syncAllUI();
-        requestRender();
-        showToast('Photo reset');
-      };
-      document.getElementById('resetPhotoEditsBtn').addEventListener('click', resetAllPhoto);
-
-      // Undo / Redo / Copy / Paste / Sync All
-      document.getElementById('undoBtn').addEventListener('click', () => {
-        const p = getActivePhoto();
-        if (p && p.historyIdx > 0) jumpHistory(p, p.historyIdx - 1);
-      });
-      document.getElementById('redoBtn').addEventListener('click', () => {
-        const p = getActivePhoto();
-        if (p && p.historyIdx < p.history.length - 1) jumpHistory(p, p.historyIdx + 1);
-      });
-
-      document.getElementById('headerCopyBtn').addEventListener('click', copyCurrentEdits);
-      document.getElementById('mobileCopyBtn').addEventListener('click', copyCurrentEdits);
-      document.getElementById('headerPasteBtn').addEventListener('click', pasteCurrentEdits);
-      document.getElementById('mobilePasteBtn').addEventListener('click', pasteCurrentEdits);
-      document.getElementById('headerSyncAllBtn').addEventListener('click', syncAllEdits);
-      document.getElementById('mobileSyncAllBtn').addEventListener('click', syncAllEdits);
-
-      // Hold-to-Compare
-      const setComp = (on) => {
-        if (state.isComparing === on) return;
-        state.isComparing = on;
-        document.getElementById('comparingBadge').classList.toggle('hidden', !on);
-        requestRender();
-      };
-      const compFooter = document.getElementById('holdCompareFooterBtn');
-      const compMob = document.getElementById('mobileCompareBtn');
-      [compFooter, compMob].forEach(b => {
-        b.addEventListener('pointerdown', () => setComp(true));
-        b.addEventListener('pointerup', () => setComp(false));
-        b.addEventListener('pointerleave', () => setComp(false));
-      });
-
-      // Crop & Custom Rotation Controls
-      document.getElementById('commitCropBtn').addEventListener('click', () => setStudioMode('edit'));
-      document.getElementById('resetCropBtn').addEventListener('click', () => {
-        const p = getActivePhoto();
-        if (!p) return;
-        p.transform = defaultTransform();
-        geomCache.signature = '';
-        pushHistory(p, 'Reset Crop');
-        syncCropUI(p);
-        requestRender();
-      });
-
-      const stInp = document.getElementById('straightenInput');
-      stInp.addEventListener('input', () => {
-        const p = getActivePhoto();
-        if (!p) return;
-        p.transform.straighten = parseFloat(stInp.value);
-        syncCropUI(p);
-        requestRender();
-      });
-      stInp.addEventListener('change', () => {
-        const p = getActivePhoto();
-        if (p) pushHistory(p, `Angle ${p.transform.straighten.toFixed(1)}°`);
-      });
-      const resetAngle = () => {
-        const p = getActivePhoto();
-        if (!p) return;
-        p.transform.straighten = 0;
-        pushHistory(p, 'Reset Angle');
-        syncCropUI(p);
-        requestRender();
-      };
-      stInp.addEventListener('dblclick', resetAngle);
-      document.getElementById('resetAngleDotBtn').addEventListener('click', resetAngle);
-
-      document.getElementById('autoScaleCropCheck').addEventListener('change', (e) => {
-        const p = getActivePhoto();
-        if (!p) return;
-        p.transform.autoScale = e.target.checked;
-        requestRender();
-      });
-
-      document.querySelectorAll('#aspectPresetsGrid button').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const p = getActivePhoto();
-          if (p) applyAspectRatioPreset(p, btn.dataset.aspect);
-        });
-      });
-
-      document.getElementById('swapAspectBtn').addEventListener('click', () => {
-        const p = getActivePhoto();
-        if (!p) return;
-        const cb = p.transform.cropBox;
-        const rot90 = ((p.transform.rot90 % 360) + 360) % 360;
-        const swap = rot90 === 90 || rot90 === 270;
-        const imgW = swap ? p.origHeight : p.origWidth;
-        const imgH = swap ? p.origWidth : p.origHeight;
-        const invR = (cb.h * imgH) / (cb.w * imgW);
-        const imgR = imgW / imgH;
-        let w = 1, h = 1;
-        if (invR > imgR) { w = 1; h = imgR / invR; }
-        else { h = 1; w = invR / imgR; }
-        p.transform.cropBox = { x: (1 - w) / 2, y: (1 - h) / 2, w, h };
-        pushHistory(p, 'Swapped Orientation');
-        syncCropUI(p);
-        drawInteractiveStageOverlay();
-      });
-
-      document.getElementById('rotCCWBtn').addEventListener('click', () => {
-        const p = getActivePhoto();
-        if (!p) return;
-        p.transform.rot90 = (p.transform.rot90 - 90) % 360;
-        pushHistory(p, 'Rotate -90°');
-        syncCropUI(p);
-        requestRender();
-      });
-      document.getElementById('rotCWBtn').addEventListener('click', () => {
-        const p = getActivePhoto();
-        if (!p) return;
-        p.transform.rot90 = (p.transform.rot90 + 90) % 360;
-        pushHistory(p, 'Rotate +90°');
-        syncCropUI(p);
-        requestRender();
-      });
-      document.getElementById('flipHBtn').addEventListener('click', () => {
-        const p = getActivePhoto();
-        if (!p) return;
-        p.transform.flipH = !p.transform.flipH;
-        pushHistory(p, 'Flip H');
-        requestRender();
-      });
-      document.getElementById('flipVBtn').addEventListener('click', () => {
-        const p = getActivePhoto();
-        if (!p) return;
-        p.transform.flipV = !p.transform.flipV;
-        pushHistory(p, 'Flip V');
-        requestRender();
-      });
-
-      // Masking Controls
-      document.getElementById('addLinearMaskBtn').addEventListener('click', () => addMaskLayer('linear'));
-      document.getElementById('addRadialMaskBtn').addEventListener('click', () => addMaskLayer('radial'));
-      document.getElementById('addBrushMaskBtn').addEventListener('click', () => addMaskLayer('brush'));
-
-      document.getElementById('showMaskOverlayCheck').addEventListener('change', (e) => {
-        state.showMaskOverlay = e.target.checked;
-        requestRender();
-      });
-      document.getElementById('invertMaskCheck').addEventListener('change', (e) => {
-        const p = getActivePhoto();
-        const m = getActiveMask(p);
-        if (!m) return;
-        m.invert = e.target.checked;
-        pushHistory(p, `Invert ${m.name}`);
-        requestRender();
-      });
-      document.getElementById('deleteAllMasksBtn').addEventListener('click', () => {
-        const p = getActivePhoto();
-        if (!p || !p.masks.length) return;
-        p.masks = [];
-        pushHistory(p, 'Cleared Masks');
-        renderMasksUI();
-        requestRender();
-      });
-
-      document.getElementById('brushPaintBtn').addEventListener('click', () => {
-        state.brush.mode = 'paint';
-        document.getElementById('brushPaintBtn').classList.add('pt-btn-active');
-        document.getElementById('brushEraseBtn').classList.remove('pt-btn-active');
-      });
-      document.getElementById('brushEraseBtn').addEventListener('click', () => {
-        state.brush.mode = 'erase';
-        document.getElementById('brushEraseBtn').classList.add('pt-btn-active');
-        document.getElementById('brushPaintBtn').classList.remove('pt-btn-active');
-      });
-      document.getElementById('brushSizeInput').addEventListener('input', (e) => {
-        state.brush.size = parseInt(e.target.value, 10);
-        document.getElementById('brushSizeVal').textContent = `${state.brush.size} px`;
-      });
-      document.getElementById('brushFeatherInput').addEventListener('input', (e) => {
-        state.brush.feather = parseInt(e.target.value, 10);
-        document.getElementById('brushFeatherVal').textContent = `${state.brush.feather}%`;
-      });
-      document.getElementById('resetMaskSlidersBtn').addEventListener('click', () => {
-        const p = getActivePhoto();
-        const m = getActiveMask(p);
-        if (!m) return;
-        m.grade = defaultMaskGrade();
-        pushHistory(p, `Reset ${m.name}`);
-        renderMasksUI();
-        requestRender();
-      });
-
-      // Custom Preset Saving
-      document.getElementById('showSavePresetBoxBtn').addEventListener('click', () => {
-        document.getElementById('savePresetForm').classList.remove('hidden');
-        document.getElementById('customPresetNameInput').focus();
-      });
-      document.getElementById('cancelPresetBtn').addEventListener('click', () => {
-        document.getElementById('savePresetForm').classList.add('hidden');
-      });
-      document.getElementById('confirmSavePresetBtn').addEventListener('click', () => {
-        const p = getActivePhoto();
-        const name = document.getElementById('customPresetNameInput').value.trim();
-        if (!p || !name) return;
-        state.customPresets.push({ name, values: { ...p.adjustments } });
-        try { localStorage.setItem('picture_this_custom_presets_v1', JSON.stringify(state.customPresets)); } catch (_) {}
-        document.getElementById('customPresetNameInput').value = '';
-        document.getElementById('savePresetForm').classList.add('hidden');
-        renderPresetsList();
-        showToast(`Saved "${name}"`);
-      });
-
-      // Queue Actions & Zoom
-      document.getElementById('selectAllQueueBtn').addEventListener('click', () => {
-        const all = state.photos.every(p => p.checked);
-        state.photos.forEach(p => p.checked = !all);
-        renderFilmstrips();
-      });
-      document.getElementById('clearQueueBtn').addEventListener('click', () => {
-        state.photos = [];
-        state.activePhotoId = null;
-        geomCache.signature = '';
-        renderFilmstrips();
-        syncAllUI();
-      });
-
-      document.getElementById('zoomInBtn').addEventListener('click', () => {
-        state.zoom = Math.min(2.5, +(state.zoom + 0.25).toFixed(2));
-        fitCanvasInStage();
-        drawInteractiveStageOverlay();
-      });
-      document.getElementById('zoomOutBtn').addEventListener('click', () => {
-        state.zoom = Math.max(0.5, +(state.zoom - 0.25).toFixed(2));
-        fitCanvasInStage();
-        drawInteractiveStageOverlay();
-      });
-      document.getElementById('zoomFitBtn').addEventListener('click', () => {
-        state.zoom = 1;
-        fitCanvasInStage();
-        drawInteractiveStageOverlay();
-      });
-
-      // Export Modal Controls
-      const expModal = document.getElementById('exportModalBackdrop');
-      document.getElementById('openExportModalBtn').addEventListener('click', () => {
-        expModal.classList.remove('hidden');
-        expModal.classList.add('flex');
-      });
-      document.getElementById('closeExportModalBtn').addEventListener('click', () => {
-        expModal.classList.add('hidden');
-        expModal.classList.remove('flex');
-      });
-      expModal.addEventListener('click', (e) => {
-        if (e.target === expModal) {
-          expModal.classList.add('hidden');
-          expModal.classList.remove('flex');
-        }
-      });
-
-      document.querySelectorAll('.exp-scope-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          state.exportOpts.scope = btn.dataset.expScope;
-          document.querySelectorAll('.exp-scope-btn').forEach(b => b.classList.toggle('pt-btn-active', b === btn));
-        });
-      });
-      document.querySelectorAll('.exp-mime-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          state.exportOpts.mime = btn.dataset.expMime;
-          document.querySelectorAll('.exp-mime-btn').forEach(b => b.classList.toggle('pt-btn-active', b === btn));
-          document.getElementById('expQualityRow').classList.toggle('hidden', state.exportOpts.mime === 'image/png');
-        });
-      });
-      document.getElementById('expQualityInput').addEventListener('input', (e) => {
-        const v = parseInt(e.target.value, 10);
-        state.exportOpts.quality = v / 100;
-        document.getElementById('expQualityLabel').textContent = `${v}%`;
-      });
-      document.querySelectorAll('.exp-dim-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const val = btn.dataset.expDim;
-          state.exportOpts.maxDim = val === 'custom' ? 'custom' : parseInt(val, 10);
-          document.querySelectorAll('.exp-dim-btn').forEach(b => b.classList.toggle('pt-btn-active', b === btn));
-          document.getElementById('customDimBox').classList.toggle('hidden', val !== 'custom');
-        });
-      });
-
-      document.getElementById('downloadZipBtn').addEventListener('click', () => runBulkExport(true));
-      document.getElementById('downloadIndividualBtn').addEventListener('click', () => runBulkExport(false));
-
-      // Fast Keyboard Shortcuts
-      window.addEventListener('keydown', (e) => {
-        if (e.target.tagName === 'INPUT') return;
-        const p = getActivePhoto();
-
-        if (e.code === 'Space') {
-          e.preventDefault();
-          setComp(true);
-          return;
-        }
-        if (e.key === 'Tab') {
-          e.preventDefault();
-          const anyOpen = state.leftOpen || state.rightOpen;
-          state.leftOpen = !anyOpen;
-          state.rightOpen = !anyOpen;
-          document.getElementById('leftQueueDrawer').classList.toggle('collapsed', !state.leftOpen);
-          document.getElementById('rightInspectorDrawer').classList.toggle('collapsed', !state.rightOpen);
-          setTimeout(() => { fitCanvasInStage(); drawInteractiveStageOverlay(); }, 170);
-          return;
-        }
-        if (e.key === '1') setStudioMode('edit');
-        else if (e.key === '2') setStudioMode('crop');
-        else if (e.key === '3') setStudioMode('mask');
-        else if (e.key === '4') setStudioMode('presets');
-        else if (e.key === '[') document.getElementById('toggleLeftQueueBtn').click();
-        else if (e.key === ']') document.getElementById('toggleRightInspectorBtn').click();
-        else if (e.key.toLowerCase() === 'r' && !e.ctrlKey && !e.metaKey) resetAllPhoto();
-        else if (e.key.toLowerCase() === 'e' && !e.ctrlKey && !e.metaKey) document.getElementById('openExportModalBtn').click();
-        else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-          if (state.photos.length > 1) {
-            const i = state.photos.findIndex(x => x.id === state.activePhotoId);
-            selectPhoto(state.photos[(i + 1) % state.photos.length].id);
-          }
-        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-          if (state.photos.length > 1) {
-            const i = state.photos.findIndex(x => x.id === state.activePhotoId);
-            selectPhoto(state.photos[(i - 1 + state.photos.length) % state.photos.length].id);
-          }
-        } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
-          e.preventDefault();
-          if (p && p.historyIdx > 0) jumpHistory(p, p.historyIdx - 1);
-        } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
-          e.preventDefault();
-          if (p && p.historyIdx < p.history.length - 1) jumpHistory(p, p.historyIdx + 1);
-        } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
-          copyCurrentEdits();
-        } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
-          pasteCurrentEdits();
-        }
-      });
-
-      window.addEventListener('keyup', (e) => {
-        if (e.code === 'Space') setComp(false);
-      });
-    }
-
-    window.addEventListener('load', initApp);
-  </script>
+  <!-- External Libraries: Anime.js & fflate -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
+  <script src="./app.js"></script>
 </body>
 </html>
