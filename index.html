@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Picture This</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Ccircle cx='128' cy='128' r='104' fill='none' stroke='%23f97316' stroke-width='20'/%3E%3Cline x1='128' y1='24' x2='164.6' y2='134.8' stroke='%23f97316' stroke-width='18' stroke-linecap='round'/%3E%3Cline x1='37.9' y1='76' x2='152.1' y2='99.6' stroke='%23f97316' stroke-width='18' stroke-linecap='round'/%3E%3Cline x1='37.9' y1='180' x2='115.5' y2='93.2' stroke='%23f97316' stroke-width='18' stroke-linecap='round'/%3E%3Cline x1='128' y1='232' x2='91.4' y2='121.2' stroke='%23f97316' stroke-width='18' stroke-linecap='round'/%3E%3Cline x1='218.1' y1='180' x2='103.9' y2='156.4' stroke='%23f97316' stroke-width='18' stroke-linecap='round'/%3E%3Cline x1='218.1' y1='76' x2='140.5' y2='162.8' stroke='%23f97316' stroke-width='18' stroke-linecap='round'/%3E%3C/svg%3E" />
-  <link href="https://api.fontshare.com/v2/css?f[]=general-sans@500,600&f[]=switzer@400,500,600&display=swap" rel="stylesheet" />
+  <link href="https://api.fontshare.com/v2/css?f[]=general-sans@500,600,700&f[]=switzer@400,500,600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
   <link rel="stylesheet" href="./styles.css" />
 </head>
@@ -18,31 +18,43 @@
   <div id="drop-overlay" class="drop-overlay hidden">
     <div class="drop-box">
       <i class="ph ph-folder-open"></i>
-      <span>Drop photos or folders here</span>
+      <span>Drop photographs or folders here</span>
+    </div>
+  </div>
+
+  <!-- Batch Ingestion Loading Overlay -->
+  <div id="loading-overlay" class="loading-overlay hidden">
+    <div class="loading-box">
+      <div class="loading-top">
+        <span id="loading-title" class="loading-title">Importing Photographs</span>
+        <span id="loading-count" class="loading-count">0 / 0</span>
+      </div>
+      <div class="loading-bar-track">
+        <div id="loading-bar-fill" class="loading-bar-fill"></div>
+      </div>
+      <div class="loading-bottom">
+        <span id="loading-filename" class="loading-filename">Preparing queue...</span>
+        <span id="loading-percent" class="loading-percent">0%</span>
+      </div>
     </div>
   </div>
 
   <!-- Home Screen -->
   <section id="home-screen" class="home-screen">
     <div class="home-center">
-      <svg class="home-mark" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect class="anim-stroke" x="14" y="14" width="92" height="92" stroke="currentColor" stroke-width="2.5" />
-        <circle class="anim-stroke" cx="60" cy="60" r="28" stroke="#f97316" stroke-width="2.5" />
-        <line class="anim-stroke" x1="60" y1="14" x2="60" y2="24" stroke="currentColor" stroke-width="2" />
-        <line class="anim-stroke" x1="60" y1="96" x2="60" y2="106" stroke="currentColor" stroke-width="2" />
-        <line class="anim-stroke" x1="14" y1="60" x2="24" y2="60" stroke="currentColor" stroke-width="2" />
-        <line class="anim-stroke" x1="96" y1="60" x2="106" y2="60" stroke="currentColor" stroke-width="2" />
-      </svg>
+      <div class="hero-title-wrap">
+        <h1 id="hero-title" class="home-title" aria-label="Picture This">Picture This</h1>
+        <div id="hero-rule" class="hero-rule"></div>
+      </div>
 
-      <h1 class="home-title">Picture This</h1>
-      <p class="home-subtitle">Fast batch photo developing &amp; format conversion</p>
+      <p class="home-subtitle">Batch photo developing, local masking &amp; instant format conversion</p>
 
       <div class="home-actions">
-        <button id="home-btn-photos" class="btn btn-primary">
+        <button id="home-btn-photos" class="btn btn-primary btn-lg">
           <i class="ph ph-images"></i>
           <span>Select Photos</span>
         </button>
-        <button id="home-btn-folder" class="btn btn-secondary">
+        <button id="home-btn-folder" class="btn btn-secondary btn-lg">
           <i class="ph ph-folder-notch-open"></i>
           <span>Select Folder</span>
         </button>
@@ -61,8 +73,7 @@
     <!-- Top Header Bar -->
     <header class="topbar">
       <div class="topbar-left">
-        <button id="btn-home-logo" class="brand-btn" title="Add more photos">
-          <span class="brand-dot"></span>
+        <button id="btn-home-logo" class="brand-btn" title="Add more photographs">
           <span class="brand-name">Picture This</span>
         </button>
         <span id="photo-counter" class="photo-counter">0 / 0</span>
@@ -132,14 +143,18 @@
           </div>
         </div>
 
-        <!-- Dedicated Non-Overlapping Utility Bar -->
+        <!-- Dedicated Utility Bar -->
         <div class="stage-bar">
           <div class="stage-bar-left">
-            <button id="btn-toggle-filmstrip" class="bar-btn" title="Toggle Filmstrip">
-              <i class="ph ph-film-strip"></i>
-              <span>Filmstrip</span>
+            <button id="btn-toggle-queue" class="bar-btn" title="Toggle Photo Queue">
+              <i class="ph ph-images-square"></i>
+              <span>Queue</span>
             </button>
-            <span id="file-meta" class="file-meta"></span>
+            <div class="rename-inline-wrap" title="Click to rename this photograph">
+              <i class="ph ph-pencil-simple"></i>
+              <input type="text" id="input-photo-name" class="inline-name-input" placeholder="Filename" spellcheck="false" />
+            </div>
+            <span id="file-meta" class="file-meta hide-sm"></span>
           </div>
 
           <div class="stage-bar-right">
@@ -162,9 +177,9 @@
           </div>
         </div>
 
-        <!-- Collapsible Bottom Filmstrip -->
-        <div id="filmstrip-wrap" class="filmstrip-wrap">
-          <div id="filmstrip" class="filmstrip"></div>
+        <!-- Collapsible Photo Queue -->
+        <div id="queue-wrap" class="queue-wrap">
+          <div id="photo-queue" class="photo-queue"></div>
         </div>
       </section>
 
@@ -217,7 +232,7 @@
             <div class="accordion-body" id="sliders-color"></div>
           </div>
 
-          <!-- Detail & Effects Accordion -->
+          <!-- Effects Accordion -->
           <div class="accordion open" data-section="effects">
             <div class="accordion-header">
               <button class="accordion-trigger" type="button">
@@ -240,25 +255,44 @@
         <!-- CROP PANEL -->
         <div id="panel-crop" class="inspector-panel">
           <div class="panel-section">
-            <div class="section-label">Aspect Ratio</div>
+            <div class="section-header-row">
+              <span class="section-label">Aspect Ratio</span>
+              <button id="btn-swap-ratio" class="mini-action-btn" title="Swap width &amp; height orientation">
+                <i class="ph ph-arrows-left-right"></i>
+                <span>Swap</span>
+              </button>
+            </div>
             <div class="ratio-grid">
               <button class="ratio-btn active" data-ratio="free">Free</button>
               <button class="ratio-btn" data-ratio="original">Original</button>
-              <button class="ratio-btn" data-ratio="1:1">1:1</button>
-              <button class="ratio-btn" data-ratio="4:5">4:5</button>
-              <button class="ratio-btn" data-ratio="3:2">3:2</button>
-              <button class="ratio-btn" data-ratio="16:9">16:9</button>
-              <button class="ratio-btn" data-ratio="21:9">21:9</button>
-              <button id="btn-swap-ratio" class="ratio-btn" title="Swap orientation">
-                <i class="ph ph-arrows-left-right"></i> Swap
-              </button>
+              <button class="ratio-btn" data-ratio="1:1">1:1 Square</button>
+              <button class="ratio-btn" data-ratio="4:5">4:5 Social</button>
+              <button class="ratio-btn" data-ratio="9:16">9:16 Mobile</button>
+              <button class="ratio-btn" data-ratio="3:4">3:4 Portrait</button>
+              <button class="ratio-btn" data-ratio="2:3">2:3 Classic</button>
+              <button class="ratio-btn" data-ratio="3:2">3:2 Photo</button>
+              <button class="ratio-btn" data-ratio="4:3">4:3 Standard</button>
+              <button class="ratio-btn" data-ratio="16:9">16:9 Wide</button>
+              <button class="ratio-btn" data-ratio="21:9">21:9 Cinema</button>
+              <button class="ratio-btn" data-ratio="custom">Custom</button>
+            </div>
+
+            <!-- Custom Ratio / Size Inputs -->
+            <div class="custom-ratio-box">
+              <span class="custom-ratio-label">Custom Ratio / Size</span>
+              <div class="custom-ratio-inputs">
+                <input type="number" id="crop-custom-w" class="text-input" min="1" max="10000" value="1080" placeholder="W" />
+                <span class="ratio-colon">:</span>
+                <input type="number" id="crop-custom-h" class="text-input" min="1" max="10000" value="1920" placeholder="H" />
+                <button id="btn-apply-custom-crop" class="btn btn-secondary btn-compact">Apply</button>
+              </div>
             </div>
           </div>
 
           <div class="panel-section">
             <div class="slider-row">
               <div class="slider-header">
-                <span class="slider-label">Straighten</span>
+                <span class="slider-label" id="label-rotate-fine" title="Double-click to reset">Straighten</span>
                 <span id="val-rotate-fine" class="slider-val">0.0°</span>
               </div>
               <input type="range" id="slider-rotate-fine" class="studio-range" min="-45" max="45" step="0.1" value="0" />
@@ -296,7 +330,7 @@
         <!-- MASK PANEL -->
         <div id="panel-mask" class="inspector-panel">
           <div class="panel-section">
-            <div class="section-label">Create Mask</div>
+            <div class="section-label">Add Local Mask</div>
             <div class="mask-create-row">
               <button id="btn-add-linear" class="btn btn-secondary">
                 <i class="ph ph-gradient"></i>
@@ -315,60 +349,94 @@
 
           <div class="panel-section">
             <div class="mask-list-header">
-              <span class="section-label">Masks</span>
+              <span class="section-label" style="margin-bottom:0">Active Masks</span>
               <label class="toggle-inline">
                 <input type="checkbox" id="chk-mask-overlay" />
-                <span>Show Overlay</span>
+                <span>Overlay (O)</span>
               </label>
             </div>
             <div id="mask-list" class="mask-list"></div>
           </div>
 
-          <div id="mask-controls-wrap" class="panel-section hidden">
-            <div class="mask-options-bar">
-              <label class="toggle-inline">
-                <input type="checkbox" id="chk-mask-invert" />
-                <span>Invert Mask</span>
-              </label>
-              <button id="btn-delete-mask" class="btn-danger-text">
-                <i class="ph ph-trash"></i> Delete
-              </button>
-            </div>
-
-            <div id="brush-controls" class="brush-controls hidden">
-              <div class="slider-row">
-                <div class="slider-header">
-                  <span class="slider-label">Brush Size</span>
-                  <span id="val-brush-size" class="slider-val">60</span>
+          <div id="mask-controls-wrap" class=" hidden">
+            <div class="panel-section">
+              <div class="mask-options-bar">
+                <label class="toggle-inline">
+                  <input type="checkbox" id="chk-mask-invert" />
+                  <span>Invert Mask</span>
+                </label>
+                <div class="mask-action-btns">
+                  <button id="btn-reset-mask" class="mini-action-btn" title="Zero all sliders on this mask">Reset</button>
+                  <button id="btn-delete-mask" class="btn-danger-text">
+                    <i class="ph ph-trash"></i> Delete
+                  </button>
                 </div>
-                <input type="range" id="slider-brush-size" class="studio-range" min="10" max="200" step="1" value="60" />
               </div>
-              <div class="brush-mode-row">
-                <button id="btn-brush-paint" class="btn btn-secondary active">Paint</button>
-                <button id="btn-brush-erase" class="btn btn-secondary">Erase</button>
-                <button id="btn-brush-clear" class="btn btn-secondary">Clear</button>
+
+              <!-- Feather / Geometry Control for Linear & Radial -->
+              <div id="geom-mask-controls" class="geom-mask-controls">
+                <div class="slider-row">
+                  <div class="slider-header">
+                    <span class="slider-label" id="label-mask-feather">Feather</span>
+                    <span id="val-mask-feather" class="slider-val">55</span>
+                  </div>
+                  <input type="range" id="slider-mask-feather" class="studio-range" min="0" max="100" step="1" value="55" />
+                </div>
+              </div>
+
+              <!-- Brush Specific Controls -->
+              <div id="brush-controls" class="brush-controls hidden">
+                <div class="slider-row">
+                  <div class="slider-header">
+                    <span class="slider-label">Brush Size</span>
+                    <span id="val-brush-size" class="slider-val">60</span>
+                  </div>
+                  <input type="range" id="slider-brush-size" class="studio-range" min="8" max="220" step="1" value="60" />
+                </div>
+                <div class="slider-row" style="margin-top:8px">
+                  <div class="slider-header">
+                    <span class="slider-label">Brush Softness</span>
+                    <span id="val-brush-feather" class="slider-val">65</span>
+                  </div>
+                  <input type="range" id="slider-brush-feather" class="studio-range" min="0" max="100" step="1" value="65" />
+                </div>
+                <div class="brush-mode-row">
+                  <button id="btn-brush-paint" class="btn btn-secondary active">Paint</button>
+                  <button id="btn-brush-erase" class="btn btn-secondary">Erase</button>
+                  <button id="btn-brush-clear" class="btn btn-secondary">Clear</button>
+                </div>
               </div>
             </div>
 
-            <div id="sliders-mask" class="mask-sliders"></div>
+            <div class="panel-section">
+              <div class="section-label">Mask Adjustments</div>
+              <div id="sliders-mask" class="mask-sliders"></div>
+            </div>
           </div>
         </div>
 
         <!-- PRESETS PANEL -->
         <div id="panel-presets" class="inspector-panel">
           <div class="panel-section">
-            <div class="section-label">Looks</div>
-            <div id="preset-grid" class="preset-grid"></div>
+            <div class="slider-row">
+              <div class="slider-header">
+                <span class="slider-label" id="label-preset-strength">Preset Intensity</span>
+                <span id="val-preset-strength" class="slider-val">100%</span>
+              </div>
+              <input type="range" id="slider-preset-strength" class="studio-range" min="0" max="150" step="1" value="100" />
+            </div>
           </div>
 
           <div class="panel-section">
-            <div class="section-label">Custom Presets</div>
+            <div class="section-label">Save Custom Look</div>
             <div class="save-preset-row">
-              <input type="text" id="input-preset-name" class="text-input" placeholder="Preset name..." />
+              <input type="text" id="input-preset-name" class="text-input" placeholder="Custom preset name..." />
               <button id="btn-save-preset" class="btn btn-secondary">Save</button>
             </div>
-            <div id="user-preset-list" class="preset-grid"></div>
+            <div id="user-preset-list" class="preset-cards-grid"></div>
           </div>
+
+          <div id="preset-categories-wrap"></div>
         </div>
       </aside>
     </div>
@@ -423,13 +491,38 @@
             <option value="3840">3840 px (4K)</option>
             <option value="2560">2560 px (QHD)</option>
             <option value="1920">1920 px (Full HD)</option>
-            <option value="1280">1280 px (Web)</option>
+            <option value="1080">1080 px (Social / Mobile)</option>
           </select>
         </div>
 
         <div class="form-row">
-          <label>Filename Prefix (Optional)</label>
-          <input type="text" id="export-prefix" class="text-input" placeholder="e.g. shoot-01_" />
+          <label>Naming Scheme</label>
+          <select id="export-naming-mode" class="select-input">
+            <option value="original">Photo Name + Optional Prefix/Suffix</option>
+            <option value="sequence">Custom Base Name + Sequence (001, 002...)</option>
+          </select>
+        </div>
+
+        <div id="naming-original-group" class="naming-subgrid">
+          <div class="form-row">
+            <label>Prefix</label>
+            <input type="text" id="export-prefix" class="text-input" placeholder="e.g. edited_" />
+          </div>
+          <div class="form-row">
+            <label>Suffix</label>
+            <input type="text" id="export-suffix" class="text-input" placeholder="e.g. _web" />
+          </div>
+        </div>
+
+        <div id="naming-sequence-group" class="naming-subgrid hidden">
+          <div class="form-row">
+            <label>Base Name</label>
+            <input type="text" id="export-base-name" class="text-input" value="shoot" placeholder="e.g. shoot" />
+          </div>
+          <div class="form-row">
+            <label>Start #</label>
+            <input type="number" id="export-seq-start" class="text-input" value="1" min="1" />
+          </div>
         </div>
 
         <div id="export-progress-wrap" class="export-progress hidden">
@@ -442,7 +535,7 @@
 
       <div class="modal-footer">
         <button id="btn-export-folder" class="btn btn-secondary">
-          <i class="ph ph-folder-Simple-arrow-down"></i>
+          <i class="ph ph-folder-simple-arrow-down"></i>
           <span>Save to Folder</span>
         </button>
         <button id="btn-export-zip" class="btn btn-primary">
