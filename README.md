@@ -23,4 +23,4 @@ No installation required. Works directly in your browser.
 
 ---
 
-Made by [Ayaan Ahmed](https://github.com/ayaanahmedstudios)
+Made by [Ayaan Ahmed](https://www.instagram.com/bluetigerincstudios)
